@@ -160,18 +160,45 @@ class DudeObject(pygame.sprite.Sprite):
         return steer_force, shout_direction
 
     def calculate_shout_reaction(self) -> float:
-        """ Calculates steering force based on the list of currently heard messages. """
+        """
+        Calculates steering force based on the direction of the CLOSEST heard message.
+        """
         steer_force = 0.0
-        if not self.heard_messages: return 0.0
+        if not self.heard_messages:
+            return 0.0 # No messages, no reaction force
 
-        net_direction = sum(msg.direction for msg in self.heard_messages)
+        min_distance = float('inf')  # Initialize minimum distance to infinity
+        closest_message_direction = 0  # Initialize direction (0 means no valid message found yet)
 
-        if net_direction != 0:
-            target_direction = math.copysign(1, net_direction)
+        # Find the message closest to the Dude's current position
+        for msg in self.heard_messages:
+            # Calculate horizontal distance between dude's center and message's center
+            # Assumes msg is a Sprite with a 'rect' attribute
+            if hasattr(msg, 'rect'): # Safety check
+                distance = abs(self.pos_x - msg.rect.centerx)
+
+                # If this message is closer than the current minimum
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_message_direction = msg.direction # Store the direction of this closest message
+            else:
+                # Optional: Log a warning if a message doesn't have a rect
+                # print(f"Warning: Heard object {msg} doesn't have a 'rect' attribute.")
+                pass
+
+
+        # If a closest message was found (i.e., its direction is not 0)
+        if closest_message_direction != 0:
+            # The target direction is simply the direction of the closest message
+            target_direction = float(closest_message_direction) # Should be -1.0 or 1.0
+
+            # Calculate the desired velocity based on reacting to the closest shout
             desired_shout_vel_x = target_direction * DUDE_MAX_SPEED
-            # Calculate steering force for X velocity
+
+            # Calculate the steering force needed to change current velocity towards desired velocity
             steer_force = (desired_shout_vel_x - self.vel_x) * SHOUT_REACTION_FACTOR
 
+        # Return the calculated steering force (will be 0.0 if no messages were heard or found)
         return steer_force
 
     def calculate_wander(self) -> float:

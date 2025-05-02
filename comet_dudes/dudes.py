@@ -5,9 +5,9 @@ import random
 
 # Import your classes
 from CometClass import CometObject
-from DudeClass import DudeObject           # Assumes DudeObject is in DudeClass.py
-from ExplosionClass import ExplosionObject # Assumes ExplosionObject is in ExplosionClass.py
-from ShoutMessage import ShoutMessage     # <-- 1. IMPORT ShoutMessage (ensure ShoutMessage.py exists)
+from DudeClass import DudeObject          
+from ExplosionClass import ExplosionObject 
+from ShoutMessage import ShoutMessage   
 
 # Import necessary constants from config
 from config import (BLACK, COMET_SPAWN_RATE, DUDE_COUNT, FPS, SCREEN_HEIGHT,
