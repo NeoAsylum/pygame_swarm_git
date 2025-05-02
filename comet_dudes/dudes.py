@@ -3,35 +3,48 @@
 import pygame
 import random
 
+# Import your classes
 from CometClass import CometObject
-from DudeClass import DudeObject
-from ExplosionClass import ExplosionObject
+from DudeClass import DudeObject           # Assumes DudeObject is in DudeClass.py
+from ExplosionClass import ExplosionObject # Assumes ExplosionObject is in ExplosionClass.py
+from ShoutMessage import ShoutMessage     # <-- 1. IMPORT ShoutMessage (ensure ShoutMessage.py exists)
 
-# Import necessary constants
+# Import necessary constants from config
 from config import (BLACK, COMET_SPAWN_RATE, DUDE_COUNT, FPS, SCREEN_HEIGHT,
-                    SCREEN_WIDTH, DUDE_SIZE)
+                    SCREEN_WIDTH, DUDE_SIZE, # Add any other constants needed
+                    SHOUT_ARROW_COLOR, SHOUT_ARROW_SIZE) # Constants needed by ShoutMessage
 
-# --- Hauptfunktion / Spielschleife ---
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Schwarmintelligenz Simulation")
-    clock = pygame.time.Clock()
+# --- Sprite Groups ---
+# Defined globally so spawn_dudes can access them
+all_sprites = pygame.sprite.Group()
+dudes_group = pygame.sprite.Group()
+comets_group = pygame.sprite.Group()
+explosions_group = pygame.sprite.Group()
+shout_messages_group = pygame.sprite.Group() # Group for shouts
 
-    # Sprite-Gruppen erstellen
-    all_sprites = pygame.sprite.Group()
-    dudes_group = pygame.sprite.Group()
-    comets_group = pygame.sprite.Group()
-    explosions_group = pygame.sprite.Group() # <-- Neue Gruppe für Explosionen
-
-    # Dudes erstellen
+# --- Spawn Function ---
+def spawn_dudes():
+    """ Spawns dudes up to DUDE_COUNT """
     fixed_y_position = SCREEN_HEIGHT - DUDE_SIZE # Adjust as needed
-    for _ in range(DUDE_COUNT):
+    needed = DUDE_COUNT - len(dudes_group) # Calculate how many are needed
+    print(f"Spawning {needed} dudes...") # Debug output
+    # --- 3. Fixed loop ---
+    for _ in range(needed): # Loop to create the required number
         x = random.randrange(50, SCREEN_WIDTH - 50)
         y = fixed_y_position
         dude = DudeObject(x, y)
         all_sprites.add(dude)
         dudes_group.add(dude)
+
+# --- Hauptfunktion / Spielschleife ---
+def main():
+
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Schwarmintelligenz Simulation - Shouting")
+    clock = pygame.time.Clock()
+
+    # --- Initial Spawn ---
+    spawn_dudes() # Call the corrected spawn function once
 
     running = True
     comet_timer = 0
@@ -52,8 +65,25 @@ def main():
                 comets_group.add(comet)
 
         # --- Updates ---
-        # Reihenfolge wichtig: Dudes reagieren auf Kometen/andere Dudes
-        dudes_group.update(dudes_group, comets_group)
+        # Update Dudes and collect shout requests
+        shout_requests = []
+        for dude in dudes_group:
+            # Pass all necessary groups to the dude's update method
+            shout_direction = dude.update(dudes_group, comets_group, shout_messages_group)
+            if shout_direction is not None:
+                shout_pos = dude.rect.midtop # Position above the dude
+                shout_requests.append((shout_pos, shout_direction))
+
+        # --- 2. Create Shout Messages ---
+        for pos, direction in shout_requests:
+            shout = ShoutMessage(pos, direction)
+            all_sprites.add(shout)
+            shout_messages_group.add(shout)
+        # --- End Shout Message Creation ---
+
+        # Respawn Dudes if needed
+        if len(dudes_group) < DUDE_COUNT:
+            spawn_dudes() # Call the corrected spawn function
 
         # Kometen updaten und Einschläge sammeln
         impact_points = []
@@ -62,25 +92,23 @@ def main():
             if impact:
                 impact_points.append(impact)
 
-        # --- NEU: Explosionen erstellen ---
+        # Explosionen erstellen
         for point in impact_points:
-            explosion = ExplosionObject(point) # Erstelle Explosion am Einschlagpunkt
+            explosion = ExplosionObject(point)
             all_sprites.add(explosion)
             explosions_group.add(explosion)
 
-        # --- NEU: Explosionen updaten (Timer, Animation, self.kill()) ---
+        # Update other groups
         explosions_group.update()
+        shout_messages_group.update() # Update shouts (for timer/kill)
 
-        # --- NEU: Kollision Dudes <-> Explosionen ---
-        # Dudes (True) werden entfernt, Explosionen (False) bleiben (bis ihr Timer abläuft)
+        # --- Collision Checks ---
+        # Dudes <-> Explosionen
         pygame.sprite.groupcollide(dudes_group, explosions_group, True, False, pygame.sprite.collide_mask)
-
-        # --- Kollision Dudes <-> Kometen (in der Luft) ---
-        pygame.sprite.groupcollide(dudes_group, comets_group, True, True, pygame.sprite.collide_mask)
 
         # --- Zeichnen ---
         screen.fill(BLACK)
-        all_sprites.draw(screen) # Zeichnet Dudes, Kometen und Explosionen
+        all_sprites.draw(screen) # Draws Dudes, Comets, Explosions, and Shouts
 
         # --- Anzeige aktualisieren ---
         pygame.display.flip()
