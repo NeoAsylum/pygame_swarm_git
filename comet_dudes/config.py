@@ -1,12 +1,12 @@
 
 # --- Konstanten ---
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 800
 FPS = 60
 
 # --- Add/Update Shout Message Settings ---
-SHOUT_DURATION = 120 # How many frames a shout lasts (e.g., 0.75 seconds)
-SHOUT_CHECK_RADIUS = 50 # How far Dudes check for shouts
+SHOUT_DURATION = 100 # How many frames a shout lasts (e.g., 0.75 seconds)
+SHOUT_CHECK_RADIUS = 70 # How far Dudes check for shouts
 SHOUT_REACTION_FACTOR = 0.4 # How strongly Dudes react to shouts (push in direction)
 SHOUT_ARROW_SIZE = (12, 10) # Width, Height of the arrow bounding box
 SHOUT_ARROW_COLOR = (255, 255, 0) # Yellow arrow (replaces SHOUT_COLOR if you want)
@@ -30,7 +30,6 @@ EXPLOSION_DURATION = 30 # How many frames the explosion lasts (e.g., 0.5 seconds
 DUDE_SIZE = 32
 DUDE_COUNT: int = 50
 DUDE_MAX_SPEED = 0.5
-DUDE_NEIGHBOR_RADIUS = 70 # Wie weit Dudes andere Dudes wahrnehmen
 AVOID_FACTOR = 0.2      # Stärke der Kometen-Ausweichkraft
 ALIGNMENT_FACTOR = 0.03 # Stärke der Ausrichtung an Nachbarn
 DUDE_HORIZONTAL_VISION_RANGE = 50 # Pixel distance on X-axis for comet detection

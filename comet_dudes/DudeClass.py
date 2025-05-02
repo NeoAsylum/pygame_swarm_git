@@ -4,12 +4,10 @@ import math # Import math for copysign
 
 # Import constants from config
 from config import (AVOID_FACTOR, # ALIGNMENT_FACTOR removed
-                    DUDE_MAX_SPEED, DUDE_SEPARATION_RADIUS, # DUDE_NEIGHBOR_RADIUS removed (only needed for separation/alignment)
-                    DUDE_SIZE, SCREEN_HEIGHT, SCREEN_WIDTH,
+                    DUDE_MAX_SPEED, DUDE_SEPARATION_RADIUS,
+                    DUDE_SIZE, SCREEN_WIDTH,
                     DUDE_HORIZONTAL_VISION_RANGE, SEPARATION_FACTOR, SHOUT_COOLDOWN_FRAMES, WANDER_STRENGTH,
-                    # Shout/Warning Constants
-                    # SHOUT_CHECK_RADIUS removed (using DUDE_HEARING_RADIUS)
-                    SHOUT_REACTION_FACTOR, DUDE_HEARING_RADIUS
+                    DUDE_HEARING_RADIUS
                     )
 
 # --- (Pixel Data, Color Map, create_surface_from_data remain the same) ---
@@ -118,13 +116,7 @@ class DudeObject(pygame.sprite.Sprite):
                 neighbor_count += 1
 
         if neighbor_count > 0:
-            # We don't average separation, we sum the forces from all neighbors.
-            # Apply the overall separation factor
             steer_sep_x *= SEPARATION_FACTOR
-
-            # Optional: Limit the magnitude of the separation steering force
-            # if abs(steer_sep_x) > DUDE_MAX_SPEED: # Or some other limit
-            #     steer_sep_x = math.copysign(DUDE_MAX_SPEED, steer_sep_x)
 
         return steer_sep_x
 
@@ -151,11 +143,10 @@ class DudeObject(pygame.sprite.Sprite):
             closest_dist_x, direction_to_move = comets_in_range[0]
             shout_direction = int(direction_to_move)
             # Strength based on horizontal distance
-            avoid_strength = (DUDE_HORIZONTAL_VISION_RANGE / closest_dist_x) ** 1.5
             # Desired X velocity
             desired_avoid_vel_x = direction_to_move * DUDE_MAX_SPEED
             # Calculate steering force for X velocity
-            steer_force = (desired_avoid_vel_x - self.vel_x) * AVOID_FACTOR * avoid_strength
+            steer_force = (desired_avoid_vel_x - self.vel_x) * AVOID_FACTOR
 
         return steer_force, shout_direction
 
