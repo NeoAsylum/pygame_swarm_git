@@ -6,7 +6,7 @@ import math # Import math for copysign
 from config import (AVOID_FACTOR, # ALIGNMENT_FACTOR removed
                     DUDE_MAX_SPEED, DUDE_SEPARATION_RADIUS,
                     DUDE_SIZE, SCREEN_WIDTH,
-                    DUDE_HORIZONTAL_VISION_RANGE, SEPARATION_FACTOR, SHOUT_COOLDOWN_FRAMES, WANDER_STRENGTH,
+                    DUDE_HORIZONTAL_VISION_RANGE, SEPARATION_FACTOR, SHOUT_COOLDOWN_FRAMES, SHOUT_REACTION_FACTOR, WANDER_STRENGTH,
                     DUDE_HEARING_RADIUS
                     )
 
