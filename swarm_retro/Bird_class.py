@@ -69,10 +69,7 @@ class Bird(pygame.sprite.Sprite):
 
 
         # Pygame sprite requirements
-        self.image = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
-        pygame.draw.circle(
-            self.image, self.color, (self.radius, self.radius), self.radius
-        )
+        self.image = self.base_image
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.obstacle_found_ahead = False
 
@@ -178,7 +175,6 @@ class Bird(pygame.sprite.Sprite):
                     cross_product_z = self.speed_x * to_obstacle_y - self.speed_y * to_obstacle_x
 
                     # --- Calculate Lateral Steering Force ---
-                    # Determine steering direction (perpendicular to velocity, away from obstacle)
                     steer_x = 0
                     steer_y = 0
                     if cross_product_z > 1e-6: # Obstacle is Left, steer Right (Clockwise 90deg rotation of velocity)
@@ -192,6 +188,7 @@ class Bird(pygame.sprite.Sprite):
                     if abs(steer_x) > 1e-6 or abs(steer_y) > 1e-6:
                          avoidance_force_x += steer_x * lateral_steer_magnitude
                          avoidance_force_y += steer_y * lateral_steer_magnitude
+                         
         self.apply_new_velocity(
             avoidance_force_x, avoidance_force_y, self.avoidance_strength/2
         )
@@ -201,7 +198,6 @@ class Bird(pygame.sprite.Sprite):
 
     def update(self, spatial_grid, obstacles): # Removed target_pos if not needed
         """Applies forces, updates rotation, and moves the bird."""
-        # Store current center before forces change speed_x/y potentially
         current_center = self.rect.center
 
         # --- 1. Calculate and apply forces ---
@@ -210,21 +206,12 @@ class Bird(pygame.sprite.Sprite):
             self.flock(spatial_grid)
 
         # --- 2. Rotate Sprite based on final direction ---
-        # Calculate angle from the velocity vector (speed_x, speed_y)
-        # Use atan2 for accuracy; negate speed_y because Pygame's Y is inverted
         angle_rad = math.atan2(-self.speed_y, self.speed_x)
         angle_deg = math.degrees(angle_rad)
 
-        # Rotate the *base* image to avoid quality degradation
         self.image = pygame.transform.rotate(self.base_image, angle_deg)
 
-        # Get the new rect for the rotated image and *reset its center*
-        # This ensures the sprite stays centered at its logical position (x, y)
         self.rect = self.image.get_rect(center=current_center)
 
         # --- 3. Move the bird ---
-        # Move updates self.x, self.y and self.rect.center
         self.move()
-        # Note: Since move updates self.rect.center AFTER rotation, the rotation
-        # uses the center from the *start* of the update, and move sets the final one.
-        # This is generally fine. Alternatively, rotate *after* move(), using self.x, self.y.
