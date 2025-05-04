@@ -16,7 +16,7 @@ pygame.display.set_caption("Flocking Birds - Buttons")
 font = pygame.font.Font(None, 30)
 
 # Create a list of birds
-num_birds = 300
+num_birds = 400
 birds = []
 for _ in range(num_birds):
     bird_x = random.randint(20, width - 20)

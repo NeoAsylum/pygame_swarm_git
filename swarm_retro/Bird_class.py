@@ -8,9 +8,12 @@ blue = (0, 0, 255)
 color = (20, 20, 20)
 radius = 3
 separation_distance = 50
+COS_30_DEGREES = math.cos(math.radians(30)) # approx 0.866
+
 
 class Bird(pygame.sprite.Sprite):
     collision_count = 0
+
     def __init__(
         self,
         x,
@@ -45,12 +48,33 @@ class Bird(pygame.sprite.Sprite):
         self.color = (20, 20, 20)
         self.separation_distance = 50
 
+         # --- Create the Base Image (Triangle pointing right) ---
+        # Size for the triangle base image
+        base_size = self.radius * 2.5 # Make it slightly larger than diameter for better look
+        # Points for a simple triangle pointing right (+X direction)
+        # Centered roughly within the surface for better rotation pivot
+        # Surface needs to be large enough to hold the rotated shape
+        surf_size = int(base_size * 1.5) # Make surface larger than shape
+        center_offset = surf_size / 2
+
+        # Define triangle points relative to surface center (pointing right)
+        tip = (center_offset + base_size * 0.6, center_offset)
+        wing_top = (center_offset - base_size * 0.4, center_offset - base_size * 0.4)
+        wing_bottom = (center_offset - base_size * 0.4, center_offset + base_size * 0.4)
+
+        # Create transparent surface
+        self.base_image = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
+        # Draw the triangle
+        pygame.draw.polygon(self.base_image, self.color, [tip, wing_top, wing_bottom])
+
+
         # Pygame sprite requirements
         self.image = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(
             self.image, self.color, (self.radius, self.radius), self.radius
         )
         self.rect = self.image.get_rect(center=(self.x, self.y))
+        self.obstacle_found_ahead = False
 
     def move(self):
         self.x += self.speed_x * self.global_speed_factor
@@ -119,33 +143,88 @@ class Bird(pygame.sprite.Sprite):
             self.speed_y /= magnitude
 
     def avoid_obstacles(self, obstacles):
-        global collision_count  # Explicitly reference the global variable
         avoidance_force_x = 0
         avoidance_force_y = 0
-        avoid_distance = 100  # Birds start avoiding obstacles from this distance
+        # --- Parameters ---
+        avoid_distance = 100  # Start checking distance
+        # *** Strength of the sideways push when avoiding. TUNE THIS! ***
+        lateral_steer_magnitude = 2.5 # Increased slightly, adjust as needed
+
+        # Reset flag at the start of the check
+        self.obstacle_found_ahead = False # Use the original flag name
 
         for obstacle in obstacles:
-            diff_x = self.x - (obstacle.x + obstacle.width / 2)
-            diff_y = self.y - (obstacle.y + obstacle.height / 2)
-            dist = math.sqrt(diff_x**2 + diff_y**2)
-            if dist < avoid_distance:
-                normalized_x = diff_x / dist
-                normalized_y = diff_y / dist
-                if self.rect.colliderect(obstacle.rect):  # Check collision
-                    Bird.collision_count += 1  # Increment counter on collision
-                force_magnitude = max(
-                    0, 2.5 - (dist / avoid_distance)
-                )  # Stronger force when closer
-                avoidance_force_x += normalized_x * force_magnitude
-                avoidance_force_y += normalized_y * force_magnitude
+            if not hasattr(obstacle, 'rect'): continue
+            obstacle_center_x = obstacle.rect.centerx
+            obstacle_center_y = obstacle.rect.centery
 
-        # Apply the avoidance force in a smooth way
+            diff_x = self.x - obstacle_center_x
+            diff_y = self.y - obstacle_center_y
+            dist_sq = diff_x**2 + diff_y**2
+
+            # --- Check 1: Close enough? ---
+            if dist_sq < avoid_distance**2 and dist_sq > 1e-6:
+                dist = math.sqrt(dist_sq)
+                to_obstacle_x = -diff_x
+                to_obstacle_y = -diff_y
+
+                # --- Check 2: Within +/- 30 degree cone? ---
+                dot_product = self.speed_x * to_obstacle_x + self.speed_y * to_obstacle_y
+                if dot_product > dist * COS_30_DEGREES:
+                    # Obstacle is relevant!
+                    self.obstacle_found_ahead = True # Set the flag
+
+                    # --- Check 3: Left or Right? ---
+                    cross_product_z = self.speed_x * to_obstacle_y - self.speed_y * to_obstacle_x
+
+                    # --- Calculate Lateral Steering Force ---
+                    # Determine steering direction (perpendicular to velocity, away from obstacle)
+                    steer_x = 0
+                    steer_y = 0
+                    if cross_product_z > 1e-6: # Obstacle is Left, steer Right (Clockwise 90deg rotation of velocity)
+                        steer_x = self.speed_y
+                        steer_y = -self.speed_x
+                    elif cross_product_z < -1e-6: # Obstacle is Right, steer Left (Counter-Clockwise 90deg rotation)
+                        steer_x = -self.speed_y
+                        steer_y = self.speed_x
+
+                    # Accumulate the LATERAL steering force if a direction was chosen
+                    if abs(steer_x) > 1e-6 or abs(steer_y) > 1e-6:
+                         avoidance_force_x += steer_x * lateral_steer_magnitude
+                         avoidance_force_y += steer_y * lateral_steer_magnitude
         self.apply_new_velocity(
-            avoidance_force_x, avoidance_force_y, self.avoidance_strength
-        )  # Slightly stronger steering
+            avoidance_force_x, avoidance_force_y, self.avoidance_strength/2
+        )
+        # --- Collision Detection (Stats) ---
+        if self.rect.colliderect(obstacle.rect):
+            Bird.collision_count += 1
 
-    def update(self, spatial_grid, obstacles):
-        """Updates movement and flocking behavior when called by pygame.sprite.Group().update()"""
+    def update(self, spatial_grid, obstacles): # Removed target_pos if not needed
+        """Applies forces, updates rotation, and moves the bird."""
+        # Store current center before forces change speed_x/y potentially
+        current_center = self.rect.center
+
+        # --- 1. Calculate and apply forces ---
+        self.avoid_obstacles(obstacles)
+        if not self.obstacle_found_ahead:
+            self.flock(spatial_grid)
+
+        # --- 2. Rotate Sprite based on final direction ---
+        # Calculate angle from the velocity vector (speed_x, speed_y)
+        # Use atan2 for accuracy; negate speed_y because Pygame's Y is inverted
+        angle_rad = math.atan2(-self.speed_y, self.speed_x)
+        angle_deg = math.degrees(angle_rad)
+
+        # Rotate the *base* image to avoid quality degradation
+        self.image = pygame.transform.rotate(self.base_image, angle_deg)
+
+        # Get the new rect for the rotated image and *reset its center*
+        # This ensures the sprite stays centered at its logical position (x, y)
+        self.rect = self.image.get_rect(center=current_center)
+
+        # --- 3. Move the bird ---
+        # Move updates self.x, self.y and self.rect.center
         self.move()
-        self.flock(spatial_grid)
-        self.avoid_obstacles(obstacles)  # Avoid obstacles before finalizing movement
+        # Note: Since move updates self.rect.center AFTER rotation, the rotation
+        # uses the center from the *start* of the update, and move sets the final one.
+        # This is generally fine. Alternatively, rotate *after* move(), using self.x, self.y.

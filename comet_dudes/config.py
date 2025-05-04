@@ -1,7 +1,7 @@
 
 # --- Konstanten ---
 SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 800
+SCREEN_HEIGHT = 600
 FPS = 60
 
 # --- Add/Update Shout Message Settings ---
