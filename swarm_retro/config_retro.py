@@ -10,38 +10,68 @@ INITIAL_BIRDS = 50
 BIRD_RADIUS = 3
 BIRD_SEPARATION_DISTANCE = 40
 BIRD_INITIAL_ENERGY = 100
-BIRD_ENERGY_THRESHOLD_REPRODUCTION = 150
+BIRD_ENERGY_THRESHOLD_REPRODUCTION = 150 # Maximale Energie, auch Referenz für Schwellen
 BIRD_REPRODUCTION_COST = 70
-BIRD_MUTATION_RATE = 0.10 # Allgemeine Mutationsrate für Standardfaktoren (Cohesion, Alignment, Separation)
+BIRD_MUTATION_RATE = 0.10
+
+# --- Evolutionäre Parameter ---
+BIRD_CROSSOVER_RATE = 0.7
+BIRD_MATING_RADIUS = 50
+
+# --- Energiekosten ---
+BIRD_ENERGY_COST_PER_TICK = 0.02
+BIRD_ENERGY_COST_AVOIDANCE_MANEUVER = 0.2
+# BIRD_LOW_ENERGY_THRESHOLD wurde durch einen genetischen Faktor ersetzt
+
+# --- Genetische Variabilität für Zustands-Schwellenwerte ---
+BIRD_INITIAL_ENERGY_MIN_FACTOR = 0.9
+BIRD_INITIAL_ENERGY_MAX_FACTOR = 1.1
+
+# Hunger-Antrieb (Faktor der Reproduktionsenergie, bei dem Nahrungssuche beginnt)
+BIRD_HUNGER_DRIVE_FACTOR_DEFAULT = 0.8
+BIRD_HUNGER_DRIVE_FACTOR_MIN = 0.5
+BIRD_HUNGER_DRIVE_FACTOR_MAX = 0.95
+BIRD_BEHAVIORAL_GENE_MUTATION_RATE = 0.05 # Eigene Mutationsrate für neue Verhaltensgene
+
+# Niedrig-Energie-Schwelle (als Faktor der Reproduktionsschwelle)
+BIRD_LOW_ENERGY_THRESHOLD_FACTOR_DEFAULT = 0.25 # z.B. 25% von BIRD_ENERGY_THRESHOLD_REPRODUCTION
+BIRD_LOW_ENERGY_THRESHOLD_FACTOR_MIN = 0.15
+BIRD_LOW_ENERGY_THRESHOLD_FACTOR_MAX = 0.4
+# Verwendet BIRD_BEHAVIORAL_GENE_MUTATION_RATE
 
 # Parameter für vorausschauendes Ausweichen & evolutionäre Anpassung
-BIRD_PREDICTION_HORIZON_DEFAULT = 20 # Frames in die Zukunft für Vorhersage (Basiswert)
+BIRD_PREDICTION_HORIZON_DEFAULT = 20
 BIRD_PREDICTION_HORIZON_MIN = 5
 BIRD_PREDICTION_HORIZON_MAX = 40
-BIRD_PREDICTION_AVOID_STRENGTH_FACTOR = 1.5 # Multiplikator für Ausweichkraft bei vorhergesagter Kollision
+BIRD_PREDICTION_AVOID_STRENGTH_FACTOR = 1.5
 
 # Genetisch beeinflusste Ausweichparameter
-BIRD_REACTION_STRENGTH_DEFAULT = 0.7 # Basis-Reaktionsstärke (genetisch)
+BIRD_REACTION_STRENGTH_DEFAULT = 0.7
 BIRD_REACTION_STRENGTH_MIN = 0.2
 BIRD_REACTION_STRENGTH_MAX = 1.5
-AVOIDANCE_GENE_MUTATION_RATE = 0.15 # Eigene Mutationsrate für Ausweich-Gene (prediction_horizon, reaction_strength)
+AVOIDANCE_GENE_MUTATION_RATE = 0.15
 
-BIRD_MAX_SPEED_FACTOR_SLIDER_EFFECT = 1.0 # Wird vom Speed-Slider als Basis-Maximalgeschwindigkeit genutzt
+BIRD_MAX_SPEED_FACTOR_SLIDER_EFFECT = 1.0
+
+# Konstanten für Vermeidungsschwellen
+PREDICTIVE_AVOIDANCE_CHECK_RADIUS_SQ = 150**2
+REACTIVE_AVOIDANCE_RADIUS_SQ = 80**2
+REACTIVE_AVOIDANCE_FOV_COS = 0.707
 
 # Food properties
-FOOD_SPAWN_RATE = 120 # Spawn food every X frames (e.g., every 2 seconds at 60 FPS)
-MAX_FOOD_ITEMS = 30
+FOOD_SPAWN_RATE = 60
+MAX_FOOD_ITEMS = 50
 FOOD_SIZE = 5
-FOOD_ENERGY_VALUE = 25
+FOOD_ENERGY_VALUE = 50
 
 # Comet (Moving Obstacle) properties
 COMET_SIZE_W = 20
 COMET_SIZE_H = 30
 COMET_MIN_SPEED = 1
-COMET_MAX_SPEED = 4 # Leicht erhöht für mehr Herausforderung
-INITIAL_COMETS = 7    # Leicht erhöht
-COMET_SPAWN_RATE = 150 # Etwas häufiger
-MAX_COMETS_ON_SCREEN = 18 # Leicht erhöht
+COMET_MAX_SPEED = 4
+INITIAL_COMETS = 7
+COMET_SPAWN_RATE = 150
+MAX_COMETS_ON_SCREEN = 18
 
 # Colors
 WHITE = (255, 255, 255)
@@ -50,6 +80,13 @@ RED = (200, 0, 0)
 GREEN = (0, 200, 0)
 BLUE = (0, 0, 200)
 YELLOW = (200, 200, 0)
+
+BIRD_COLOR_NORMAL = (20, 20, 20)
+BIRD_COLOR_LOW_ENERGY = (100, 20, 20)
+BIRD_COLOR_SEEKING_FOOD = (20, 100, 20)
+BIRD_COLOR_AVOIDING = (20, 20, 100)
+BIRD_COLOR_REPRODUCING = (100, 20, 100)
+
 UI_BUTTON_COLOR = (100, 180, 100)
 UI_BUTTON_HOVER_COLOR = (130, 210, 130)
 UI_BUTTON_TEXT_COLOR = (255, 255, 255)
@@ -62,5 +99,14 @@ UI_TEXT_COLOR = (10, 10, 10)
 DEFAULT_COHESION = 0.10
 DEFAULT_ALIGNMENT = 0.14
 DEFAULT_SEPARATION = 0.75
-DEFAULT_SPEED = 0.8 # Beeinflusst global_speed_factor der Vögel
-DEFAULT_AVOIDANCE_SLIDER = 0.5 # Globaler Modifikator für die genetische Reaktionsstärke der Vögel
+DEFAULT_SPEED = 0.8
+DEFAULT_AVOIDANCE_SLIDER = 0.5
+
+# Datenlogging Parameter
+LOG_FILE_BASENAME = "swarm_log"
+LOG_INTERVAL_SECONDS = 10
+SAVE_FILENAME = "swarm_save.json"
+
+# Interaktive Steuerung
+COMET_SPAWN_RATE_INCREMENT = 20
+FOOD_SPAWN_BURST_AMOUNT = 10

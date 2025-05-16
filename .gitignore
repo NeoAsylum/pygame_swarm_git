@@ -12,4 +12,5 @@ env/
 
 # Ignore logs and temporary files
 *.log
+*.csv
 tmp/
