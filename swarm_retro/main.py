@@ -23,7 +23,7 @@ for _ in range(num_birds):
     birds.append(Bird(bird_x, bird_y, width, height))
 
 # --- Obstacle Settings ---
-DESIRED_NUM_OBSTACLES = 20
+DESIRED_NUM_OBSTACLES = 8
 OBSTACLE_WIDTH = 30  # Define a width for obstacles
 OBSTACLE_HEIGHT = 30  # Define a height for obstacles
 OBSTACLE_SPEED = 4  # Define a speed for obstacles (pixels per frame)
@@ -98,7 +98,7 @@ while running:
     )  # Birds now use spatial partitioning
     obstacle_group.update()
     obstacle_frame_counter += 1
-    if obstacle_frame_counter >= 60:
+    if obstacle_frame_counter >= 40:
         obstacle_frame_counter = 0
         # --- Calculate and Display Statistics ---
         current_bird_sprites = birds_group.sprites()
