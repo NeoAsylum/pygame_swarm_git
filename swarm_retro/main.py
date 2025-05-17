@@ -64,7 +64,7 @@ def manage_obstacles():
     Spawns at most one new obstacle per frame if the count is below desired.
     """
     # If the number of obstacles is less than desired, spawn ONE new obstacle
-    if len(obstacle_group) < DESIRED_NUM_OBSTACLES:
+    if len(obstacle_group) < DESIRED_NUM_OBSTACLES or num_current_birds > 120:
         # Spawn at the right edge of the screen
         spawn_x = width  # Start at the right edge
         # Spawn at a random vertical position
