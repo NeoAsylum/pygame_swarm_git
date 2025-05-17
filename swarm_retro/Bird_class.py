@@ -8,7 +8,7 @@ blue = (0, 0, 255)
 color = (20, 20, 20)
 radius = 3
 separation_distance = 50
-COS_30_DEGREES = math.cos(math.radians(30)) # approx 0.866
+COS_30_DEGREES = math.cos(math.radians(30))  # approx 0.866
 
 
 class Bird(pygame.sprite.Sprite):
@@ -23,17 +23,20 @@ class Bird(pygame.sprite.Sprite):
         cohesion_strength=0.10,
         alignment_strength=0.13,
         separation_strength=0.7,
-        global_speed_factor=0.8,
-        avoidance_strength=0.08,
+        global_speed_factor=2.0,
+        avoidance_strength=0.5,
+        food_attraction_strength=0.01,
+        num_flock_neighbors=5,
+        reproduction_threshold=2,
     ):
         super().__init__()
         self.width = width  # Store screen width
         self.height = height  # Store screen height
-        self.cohesion_strength = cohesion_strength
-        self.alignment_strength = alignment_strength
-        self.separation_strength = separation_strength
+        self.cohesion_strength = cohesion_strength * random.uniform(0.9, 1.1)
+        self.alignment_strength = alignment_strength * random.uniform(0.9, 1.1)
+        self.separation_strength = separation_strength * random.uniform(0.9, 1.1)
         self.global_speed_factor = global_speed_factor
-        self.avoidance_strength = avoidance_strength
+        self.avoidance_strength = avoidance_strength * random.uniform(0.9, 1.1)
         self.x = x
         self.y = y
         angle = random.uniform(0, 2 * math.pi)
@@ -46,15 +49,23 @@ class Bird(pygame.sprite.Sprite):
 
         self.radius = 3
         self.color = (20, 20, 20)
-        self.separation_distance = 50
+        self.separation_distance = 50 * random.uniform(0.9, 1.1)
+        self.food_counter = 0
+        self.food_attraction_strength = food_attraction_strength * random.uniform(
+            0.9, 1.1
+        )  # Store food attraction strength
+        self.num_flock_neighbors = num_flock_neighbors
+        self.reproduction_threshold = reproduction_threshold  # Store threshold
 
-         # --- Create the Base Image (Triangle pointing right) ---
+        # --- Create the Base Image (Triangle pointing right) ---
         # Size for the triangle base image
-        base_size = self.radius * 2.5 # Make it slightly larger than diameter for better look
+        base_size = (
+            self.radius * 2.5
+        )  # Make it slightly larger than diameter for better look
         # Points for a simple triangle pointing right (+X direction)
         # Centered roughly within the surface for better rotation pivot
         # Surface needs to be large enough to hold the rotated shape
-        surf_size = int(base_size * 1.5) # Make surface larger than shape
+        surf_size = int(base_size * 1.5)  # Make surface larger than shape
         center_offset = surf_size / 2
 
         # Define triangle points relative to surface center (pointing right)
@@ -66,7 +77,6 @@ class Bird(pygame.sprite.Sprite):
         self.base_image = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
         # Draw the triangle
         pygame.draw.polygon(self.base_image, self.color, [tip, wing_top, wing_bottom])
-
 
         # Pygame sprite requirements
         self.image = self.base_image
@@ -88,17 +98,10 @@ class Bird(pygame.sprite.Sprite):
 
         self.rect.center = (self.x, self.y)
 
-    def flock(self, spatial_grid):
-        closest_birds = spatial_grid.get_nearby_birds(self)
-        if not closest_birds:
-            return
-        closest_birds = heapq.nsmallest(
-            8,
-            closest_birds,
-            key=lambda bird: (bird.x - self.x) ** 2 + (bird.y - self.y) ** 2,
-        )
+    def flock(self, closest_birds):
+        closest_birds
 
-        # Compute average movement
+        # Alignment
         avg_vx = sum(bird.speed_x for bird in closest_birds) / len(closest_birds)
         avg_vy = sum(bird.speed_y for bird in closest_birds) / len(closest_birds)
         alignment_force_x = avg_vx - self.speed_x
@@ -107,6 +110,7 @@ class Bird(pygame.sprite.Sprite):
             alignment_force_x, alignment_force_y, self.alignment_strength
         )
 
+        # Cohesion
         avg_x = sum(bird.x for bird in closest_birds) / len(closest_birds)
         avg_y = sum(bird.y for bird in closest_birds) / len(closest_birds)
         cohesion_force_x = (avg_x - self.x) / 10
@@ -115,6 +119,7 @@ class Bird(pygame.sprite.Sprite):
             cohesion_force_x, cohesion_force_y, self.cohesion_strength / 2
         )
 
+        # Separation
         separation_force_x = 0
         separation_force_y = 0
         epsilon = 0.00001
@@ -139,71 +144,146 @@ class Bird(pygame.sprite.Sprite):
             self.speed_x /= magnitude
             self.speed_y /= magnitude
 
-    def avoid_obstacles(self, obstacles):
-        avoidance_force_x = 0
-        avoidance_force_y = 0
-        # --- Parameters ---
-        avoid_distance = 100  # Start checking distance
-        # *** Strength of the sideways push when avoiding. TUNE THIS! ***
-        lateral_steer_magnitude = 2.5 # Increased slightly, adjust as needed
+    def avoid_obstacles(self, obstacles_group):
+        """
+        Simplified obstacle avoidance for horizontally moving obstacles.
+        Relies on direct X-axis proximity and Y-axis overlap, no cone of vision.
+        """
+        accumulated_vertical_force_component = 0
+        self.obstacle_found_ahead = False # Flag to indicate if any avoidance action was taken
 
-        # Reset flag at the start of the check
-        self.obstacle_found_ahead = False # Use the original flag name
+        # --- Parameters for Direct Obstacle Avoidance ---
+        # How far ahead (x-axis, from bird's right edge) an obstacle's left edge
+        # can be for the bird to start reacting. Also handles current x-overlap.
+        # This defines a simple rectangular "danger zone" in front of the bird.
+        HORIZONTAL_REACTION_DISTANCE = 80  # pixels (tune this value)
+        
+        # Base magnitude for the vertical evasion force component.
+        # This will be scaled by self.avoidance_strength in apply_new_velocity.
+        VERTICAL_EVASION_MAGNITUDE = 1.5 # (tune this value)
 
-        for obstacle in obstacles:
-            if not hasattr(obstacle, 'rect'): continue
-            obstacle_center_x = obstacle.rect.centerx
-            obstacle_center_y = obstacle.rect.centery
+        for obstacle in obstacles_group:
+            # 1. Direct Horizontal Proximity Check:
+            #    Is the obstacle currently overlapping or imminently about to overlap 
+            #    the bird on the x-axis?
+            #    - obstacle.rect.right > self.rect.left: Ensures obstacle hasn't fully passed bird's left side.
+            #    - obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE:
+            #      Ensures obstacle's front is within reaction zone extending from bird's front (right edge).
+            is_horizontally_relevant = (obstacle.rect.right > self.rect.left and
+                                        obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE)
 
-            diff_x = self.x - obstacle_center_x
-            diff_y = self.y - obstacle_center_y
-            dist_sq = diff_x**2 + diff_y**2
+            if is_horizontally_relevant:
+                # 2. Direct Y-Overlap Check:
+                #    Are the bird's and obstacle's y-ranges currently overlapping?
+                y_overlap = (self.rect.top < obstacle.rect.bottom and
+                             self.rect.bottom > obstacle.rect.top)
 
-            # --- Check 1: Close enough? ---
-            if dist_sq < avoid_distance**2 and dist_sq > 1e-6:
-                dist = math.sqrt(dist_sq)
-                to_obstacle_x = -diff_x
-                to_obstacle_y = -diff_y
+                if y_overlap:
+                    self.obstacle_found_ahead = True # Signal that an obstacle requires evasion
+                    
+                    # 3. Determine Vertical Evasion Direction (No cone calculation):
+                    #    Compare y-centers to decide whether to push the bird up or down.
+                    if self.rect.centery < obstacle.rect.centery:
+                        # Bird is above obstacle's center, obstacle is "below" bird. Push bird UP.
+                        accumulated_vertical_force_component -= VERTICAL_EVASION_MAGNITUDE
+                    elif self.rect.centery > obstacle.rect.centery:
+                        # Bird is below obstacle's center, obstacle is "above" bird. Push bird DOWN.
+                        accumulated_vertical_force_component += VERTICAL_EVASION_MAGNITUDE
+                    else:
+                        # If y-centers are perfectly aligned, pick a random direction to break the tie.
+                        accumulated_vertical_force_component += random.choice([-1, 1]) * VERTICAL_EVASION_MAGNITUDE
+                        
+        if self.obstacle_found_ahead:
+            # Apply the calculated purely vertical avoidance force.
+            # The x-component of the avoidance force is zero for this strategy.
+            self.apply_new_velocity(
+                0,  # No horizontal steering from this specific avoidance logic
+                accumulated_vertical_force_component,
+                self.avoidance_strength # Bird's overall avoidance strength attribute
+            )
 
-                # --- Check 2: Within +/- 30 degree cone? ---
-                dot_product = self.speed_x * to_obstacle_x + self.speed_y * to_obstacle_y
-                if dot_product > dist * COS_30_DEGREES:
-                    # Obstacle is relevant!
-                    self.obstacle_found_ahead = True # Set the flag
+    def move_towards_food(self, food_group, all_birds_group):
+        if not food_group:  # No food to move towards
+            return
 
-                    # --- Check 3: Left or Right? ---
-                    cross_product_z = self.speed_x * to_obstacle_y - self.speed_y * to_obstacle_x
+        closest_food = None
+        min_dist_sq = float("inf")
 
-                    # --- Calculate Lateral Steering Force ---
-                    steer_x = 0
-                    steer_y = 0
-                    if cross_product_z > 1e-6: # Obstacle is Left, steer Right (Clockwise 90deg rotation of velocity)
-                        steer_x = self.speed_y
-                        steer_y = -self.speed_x
-                    elif cross_product_z < -1e-6: # Obstacle is Right, steer Left (Counter-Clockwise 90deg rotation)
-                        steer_x = -self.speed_y
-                        steer_y = self.speed_x
+        for food_item in food_group.sprites():
+            if not hasattr(food_item, "rect"):
+                continue  # Ensure food item has a rect
 
-                    # Accumulate the LATERAL steering force if a direction was chosen
-                    if abs(steer_x) > 1e-6 or abs(steer_y) > 1e-6:
-                         avoidance_force_x += steer_x * lateral_steer_magnitude
-                         avoidance_force_y += steer_y * lateral_steer_magnitude
-                         
-        self.apply_new_velocity(
-            avoidance_force_x, avoidance_force_y, self.avoidance_strength/2
-        )
-        # --- Collision Detection (Stats) ---
-        if self.rect.colliderect(obstacle.rect):
-            Bird.collision_count += 1
+            dx = food_item.rect.centerx - self.x
+            dy = food_item.rect.centery - self.y
+            dist_sq = dx**2 + dy**2
 
-    def update(self, spatial_grid, obstacles): # Removed target_pos if not needed
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                closest_food = food_item
+
+        if closest_food:
+            # Vector from bird to the closest food
+            food_force_x = closest_food.rect.centerx - self.x
+            food_force_y = closest_food.rect.centery - self.y
+
+            self.apply_new_velocity(
+                food_force_x, food_force_y, self.food_attraction_strength
+            )
+
+            # --- EATING FOOD ---
+            # You should also handle what happens when a bird reaches food.
+            # This is typically a collision check.
+            if pygame.sprite.collide_rect(self, closest_food):
+                closest_food.kill()  # Remove food from all groups
+                self.food_counter += 1
+                # --- Reproduction Logic ---
+                if self.food_counter >= self.reproduction_threshold:
+                    self.food_counter = 0  # Reset counter for this bird
+
+                    spawn_x = self.x + random.uniform(-15, 15)  # Spawn near parent
+                    spawn_y = self.y + random.uniform(-15, 15)
+
+                    # Ensure new bird spawns within screen bounds and not stuck in wall
+                    spawn_x = max(
+                        self.radius + 1, min(self.width - (self.radius + 1), spawn_x)
+                    )
+                    spawn_y = max(
+                        self.radius + 1, min(self.height - (self.radius + 1), spawn_y)
+                    )
+
+                    new_offspring = Bird(
+                        x=spawn_x,
+                        y=spawn_y,
+                        width=self.width,
+                        height=self.height,
+                        cohesion_strength=self.cohesion_strength,
+                        alignment_strength=self.alignment_strength,
+                        separation_strength=self.separation_strength,
+                        global_speed_factor=self.global_speed_factor,
+                        avoidance_strength=self.avoidance_strength,
+                        food_attraction_strength=self.food_attraction_strength,
+                        num_flock_neighbors=self.num_flock_neighbors,
+                        reproduction_threshold=self.reproduction_threshold,  # Pass on threshold
+                    )
+                    all_birds_group.add(new_offspring)
+
+    def update(
+        self, birds_group, obstacles, food_group
+    ):  # Removed target_pos if not needed
         """Applies forces, updates rotation, and moves the bird."""
         current_center = self.rect.center
 
         # --- 1. Calculate and apply forces ---
         self.avoid_obstacles(obstacles)
+        collided_obstacle = pygame.sprite.spritecollideany(self, obstacles)
+        if collided_obstacle:
+            Bird.collision_count += 1  # Increment score for fatal collision
+            self.kill()  # Remove sprite from all groups
+            return  # Bird is killed, no further processing needed for this instance
+
         if not self.obstacle_found_ahead:
-            self.flock(spatial_grid)
+            self.flock(self.get_closest_n_birds(birds_group))
+            self.move_towards_food(food_group, birds_group)  # Apply force towards food
 
         # --- 2. Rotate Sprite based on final direction ---
         angle_rad = math.atan2(-self.speed_y, self.speed_x)
@@ -215,3 +295,19 @@ class Bird(pygame.sprite.Sprite):
 
         # --- 3. Move the bird ---
         self.move()
+
+    def get_closest_n_birds(self, birds_group):
+        neighbors_with_distances = []
+        for other_bird in birds_group.sprites():  # Iterate through all birds
+            if other_bird is self:
+                continue
+            dx = other_bird.x - self.x
+            dy = other_bird.y - self.y
+            dist_sq = dx**2 + dy**2
+            neighbors_with_distances.append((dist_sq, other_bird))
+
+        closest_neighbor_tuples = heapq.nsmallest(
+            self.num_flock_neighbors, neighbors_with_distances
+        )
+        closest_birds = [bird_tuple[1] for bird_tuple in closest_neighbor_tuples]
+        return closest_birds

@@ -1,6 +1,5 @@
 import pygame
 
-
 class SliderManager:
     def __init__(self, screen, height):
         self.screen = screen
