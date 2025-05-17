@@ -100,7 +100,7 @@ while running:
     )  # Birds now use spatial partitioning
     obstacle_group.update()
     obstacle_frame_counter += 1
-    if obstacle_frame_counter >= 40:
+    if obstacle_frame_counter >= 30:
         obstacle_frame_counter = 0
         # --- Calculate and Display Statistics ---
         current_bird_sprites = birds_group.sprites()
