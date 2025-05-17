@@ -23,15 +23,15 @@ class Bird(pygame.sprite.Sprite):
         cohesion_strength=0.10,
         alignment_strength=0.13,
         separation_strength=0.7,
-        global_speed_factor=2.0,
+        global_speed_factor=3.0,
         avoidance_strength=0.5,
         food_attraction_strength=0.01,
         num_flock_neighbors=5,
         reproduction_threshold=2,
     ):
         super().__init__()
-        self.width = width  # Store screen width
-        self.height = height  # Store screen height
+        self.scree_width = width  # Store screen width
+        self.screen_height = height  # Store screen height
         self.cohesion_strength = cohesion_strength * random.uniform(0.9, 1.1)
         self.alignment_strength = alignment_strength * random.uniform(0.9, 1.1)
         self.separation_strength = separation_strength * random.uniform(0.9, 1.1)
@@ -88,13 +88,13 @@ class Bird(pygame.sprite.Sprite):
         self.y += self.speed_y * self.global_speed_factor
 
         # Instant boundary reversal
-        if self.x <= self.radius or self.x >= self.width - self.radius:
+        if self.x <= self.radius or self.x >= self.scree_width - self.radius:
             self.speed_x *= -1
-        if self.y <= self.radius or self.y >= self.height - self.radius:
+        if self.y <= self.radius or self.y >= self.screen_height - self.radius:
             self.speed_y *= -1
 
-        self.x = max(self.radius, min(self.width - self.radius, self.x))
-        self.y = max(self.radius, min(self.height - self.radius, self.y))
+        self.x = max(self.radius, min(self.scree_width - self.radius, self.x))
+        self.y = max(self.radius, min(self.screen_height - self.radius, self.y))
 
         self.rect.center = (self.x, self.y)
 
@@ -149,32 +149,55 @@ class Bird(pygame.sprite.Sprite):
         Simplified obstacle avoidance for horizontally moving obstacles.
         Relies on direct X-axis proximity and Y-axis overlap, no cone of vision.
         """
+
+        HORIZONTAL_REACTION_DISTANCE = 200  # pixels: How close horizontally (on x-axis)
+        # an obstacle needs to be to be considered.
+
+        # Check if the obstacle is horizontally relevant
+        # (e.g., its right edge is past the bird's left, and
+        #  its left edge is not too far past the bird's right + reaction distance)
+
         accumulated_vertical_force_component = 0
-        self.obstacle_found_ahead = False # Flag to indicate if any avoidance action was taken
+        self.obstacle_found_ahead = (
+            False  # Flag to indicate if any avoidance action was taken
+        )
         # Base magnitude for the vertical evasion force component.
         # This will be scaled by self.avoidance_strength in apply_new_velocity.
-        VERTICAL_EVASION_MAGNITUDE = 1.5 # (tune this value)
-
+        VERTICAL_EVASION_MAGNITUDE = 1.5  # (tune this value)
         for obstacle in obstacles_group:
-            y_range = 20
-            y_overlap = (self.rect.top - y_range < obstacle.rect.bottom and
-                            self.rect.bottom +  y_range > obstacle.rect.top)
-
-            if y_overlap:
-                self.obstacle_found_ahead = True # Signal that an obstacle requires evasion
-                if self.rect.centery < obstacle.rect.centery:
-                    accumulated_vertical_force_component -= VERTICAL_EVASION_MAGNITUDE
-                elif self.rect.centery > obstacle.rect.centery:
-                    accumulated_vertical_force_component += VERTICAL_EVASION_MAGNITUDE
-
-        if self.obstacle_found_ahead:
-            # Apply the calculated purely vertical avoidance force.
-            # The x-component of the avoidance force is zero for this strategy.
-            self.apply_new_velocity(
-                0,  # No horizontal steering from this specific avoidance logic
-                accumulated_vertical_force_component,
-                self.avoidance_strength # Bird's overall avoidance strength attribute
+            is_horizontally_close = (
+                obstacle.rect.right > self.rect.left
+                and obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE
             )
+            if is_horizontally_close:
+
+                y_range = 20
+                y_overlap = (
+                    self.rect.top - y_range < obstacle.rect.bottom
+                    and self.rect.bottom + y_range > obstacle.rect.top
+                )
+
+                if y_overlap:
+                    self.obstacle_found_ahead = (
+                        True  # Signal that an obstacle requires evasion
+                    )
+                    if self.rect.centery < obstacle.rect.centery:
+                        accumulated_vertical_force_component -= (
+                            VERTICAL_EVASION_MAGNITUDE
+                        )
+                    elif self.rect.centery > obstacle.rect.centery:
+                        accumulated_vertical_force_component += (
+                            VERTICAL_EVASION_MAGNITUDE
+                        )
+
+            if self.obstacle_found_ahead:
+                # Apply the calculated purely vertical avoidance force.
+                # The x-component of the avoidance force is zero for this strategy.
+                self.apply_new_velocity(
+                    0,  # No horizontal steering from this specific avoidance logic
+                    accumulated_vertical_force_component,
+                    self.avoidance_strength,  # Bird's overall avoidance strength attribute
+                )
 
     def move_towards_food(self, food_group, all_birds_group):
         if not food_group:  # No food to move towards
@@ -219,17 +242,19 @@ class Bird(pygame.sprite.Sprite):
 
                     # Ensure new bird spawns within screen bounds and not stuck in wall
                     spawn_x = max(
-                        self.radius + 1, min(self.width - (self.radius + 1), spawn_x)
+                        self.radius + 1,
+                        min(self.scree_width - (self.radius + 1), spawn_x),
                     )
                     spawn_y = max(
-                        self.radius + 1, min(self.height - (self.radius + 1), spawn_y)
+                        self.radius + 1,
+                        min(self.screen_height - (self.radius + 1), spawn_y),
                     )
 
                     new_offspring = Bird(
                         x=spawn_x,
                         y=spawn_y,
-                        width=self.width,
-                        height=self.height,
+                        width=self.scree_width,
+                        height=self.screen_height,
                         cohesion_strength=self.cohesion_strength,
                         alignment_strength=self.alignment_strength,
                         separation_strength=self.separation_strength,
