@@ -2,7 +2,6 @@ import pygame
 import random
 
 from Bird_class import Bird
-from SliderManagerClass import SliderManager
 from Obstacles import Obstacle
 from FoodClass import Food  # Import the Food class
 
@@ -16,7 +15,7 @@ pygame.display.set_caption("Flocking Birds - Buttons")
 font = pygame.font.Font(None, 30)
 
 # Create a list of birds
-num_birds = 100
+num_birds = 50
 birds = []
 for _ in range(num_birds):
     bird_x = random.randint(20, width - 20)
@@ -24,19 +23,16 @@ for _ in range(num_birds):
     birds.append(Bird(bird_x, bird_y, width, height))
 
 # --- Obstacle Settings ---
-DESIRED_NUM_OBSTACLES = 6
+DESIRED_NUM_OBSTACLES = 20
 OBSTACLE_WIDTH = 30  # Define a width for obstacles
 OBSTACLE_HEIGHT = 30  # Define a height for obstacles
-OBSTACLE_SPEED = 3  # Define a speed for obstacles (pixels per frame)
+OBSTACLE_SPEED = 4  # Define a speed for obstacles (pixels per frame)
 obstacle_frame_counter = 0
 
 # Pygame clock for controlling frame rate
 clock = pygame.time.Clock()
-fps = 60  # You can set your desired frame rate here
+fps = 120  # You can set your desired frame rate here
 
-# Initialize sliders
-slider_manager = SliderManager(screen, height)
-slider_manager.apply_values_to_birds(birds)
 
 birds_group = pygame.sprite.Group(birds)
 obstacle_group = pygame.sprite.Group()
@@ -82,13 +78,17 @@ def manage_obstacles():
         obstacle_group.add(new_obstacle)
 
 
+num_current_birds = 0
+
+avg_cohesion = 0
+avg_alignment = 0
+avg_separation = 0
+avg_avoidance = 0
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif slider_manager.handle_event(event) == "apply":
-            slider_manager.apply_values_to_birds(birds)
 
     screen.fill((255, 255, 255))
     spawn_food()
@@ -100,12 +100,34 @@ while running:
     obstacle_frame_counter += 1
     if obstacle_frame_counter >= 60:
         obstacle_frame_counter = 0
+        # --- Calculate and Display Statistics ---
+        current_bird_sprites = birds_group.sprites()
+        num_current_birds = len(current_bird_sprites)
+        if num_current_birds > 0:
+            total_cohesion = 0
+            total_alignment = 0
+            total_separation = 0
+            total_avoidance = 0
+            for bird_sprite in current_bird_sprites:
+                total_cohesion += bird_sprite.cohesion_strength
+                total_alignment += bird_sprite.alignment_strength
+                total_separation += bird_sprite.separation_strength
+                total_avoidance += bird_sprite.avoidance_strength
+
+            avg_cohesion = total_cohesion / num_current_birds
+            avg_alignment = total_alignment / num_current_birds
+            avg_separation = total_separation / num_current_birds
+            avg_avoidance = total_avoidance / num_current_birds
+        else:
+            avg_cohesion = 0
+            avg_alignment = 0
+            avg_separation = 0
+            avg_avoidance = 0
+
         manage_obstacles()
     birds_group.draw(screen)
     obstacle_group.draw(screen)
     food_group.draw(screen)  # Draw the food items
-
-    slider_manager.draw_sliders()
 
     collision_text = font.render(
         f"Collision-score: {Bird.collision_count}", True, (0, 0, 0)
@@ -115,6 +137,35 @@ while running:
     current_fps = clock.get_fps()
     fps_text = font.render(f"FPS: {int(current_fps)}", True, (0, 0, 0))
     screen.blit(fps_text, (10, 10))
+    # Display new stats
+    stats_y_start = 80  # Starting Y position for the new stats
+    line_height = 30  # Gap between lines of text
+
+    bird_count_surface = font.render(
+        f"Bird Count: {num_current_birds}", True, (0, 0, 0)
+    )
+    screen.blit(bird_count_surface, (10, stats_y_start))
+
+    avg_cohesion_surface = font.render(
+        f"Avg Cohesion: {avg_cohesion:.3f}", True, (0, 0, 0)
+    )
+    screen.blit(avg_cohesion_surface, (10, stats_y_start + line_height))
+
+    avg_alignment_surface = font.render(
+        f"Avg Alignment: {avg_alignment:.3f}", True, (0, 0, 0)
+    )
+    screen.blit(avg_alignment_surface, (10, stats_y_start + 2 * line_height))
+
+    avg_separation_surface = font.render(
+        f"Avg Separation: {avg_separation:.3f}", True, (0, 0, 0)
+    )
+    screen.blit(avg_separation_surface, (10, stats_y_start + 3 * line_height))
+
+    avg_avoidance_surface = font.render(
+        f"Avg Avoidance: {avg_avoidance:.3f}", True, (0, 0, 0)
+    )
+    screen.blit(avg_avoidance_surface, (10, stats_y_start + 4 * line_height))
+    # --- End Statistics Display ---
 
     pygame.display.flip()
     clock.tick(fps)

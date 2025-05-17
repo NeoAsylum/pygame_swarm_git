@@ -23,11 +23,11 @@ class Bird(pygame.sprite.Sprite):
         cohesion_strength=0.10,
         alignment_strength=0.13,
         separation_strength=0.7,
-        global_speed_factor=3.0,
+        global_speed_factor=1.5,
         avoidance_strength=0.5,
         food_attraction_strength=0.01,
         num_flock_neighbors=5,
-        reproduction_threshold=2,
+        reproduction_threshold=1,
     ):
         super().__init__()
         self.scree_width = width  # Store screen width
@@ -170,7 +170,6 @@ class Bird(pygame.sprite.Sprite):
                 and obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE
             )
             if is_horizontally_close:
-
                 y_range = 20
                 y_overlap = (
                     self.rect.top - y_range < obstacle.rect.bottom
@@ -190,14 +189,14 @@ class Bird(pygame.sprite.Sprite):
                             VERTICAL_EVASION_MAGNITUDE
                         )
 
-            if self.obstacle_found_ahead:
-                # Apply the calculated purely vertical avoidance force.
-                # The x-component of the avoidance force is zero for this strategy.
-                self.apply_new_velocity(
-                    0,  # No horizontal steering from this specific avoidance logic
-                    accumulated_vertical_force_component,
-                    self.avoidance_strength,  # Bird's overall avoidance strength attribute
-                )
+        if self.obstacle_found_ahead:
+            # Apply the calculated purely vertical avoidance force.
+            # The x-component of the avoidance force is zero for this strategy.
+            self.apply_new_velocity(
+                0,  # No horizontal steering from this specific avoidance logic
+                accumulated_vertical_force_component,
+                self.avoidance_strength,  # Bird's overall avoidance strength attribute
+            )
 
     def move_towards_food(self, food_group, all_birds_group):
         if not food_group:  # No food to move towards
