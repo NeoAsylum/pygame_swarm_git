@@ -151,48 +151,22 @@ class Bird(pygame.sprite.Sprite):
         """
         accumulated_vertical_force_component = 0
         self.obstacle_found_ahead = False # Flag to indicate if any avoidance action was taken
-
-        # --- Parameters for Direct Obstacle Avoidance ---
-        # How far ahead (x-axis, from bird's right edge) an obstacle's left edge
-        # can be for the bird to start reacting. Also handles current x-overlap.
-        # This defines a simple rectangular "danger zone" in front of the bird.
-        HORIZONTAL_REACTION_DISTANCE = 80  # pixels (tune this value)
-        
         # Base magnitude for the vertical evasion force component.
         # This will be scaled by self.avoidance_strength in apply_new_velocity.
         VERTICAL_EVASION_MAGNITUDE = 1.5 # (tune this value)
 
         for obstacle in obstacles_group:
-            # 1. Direct Horizontal Proximity Check:
-            #    Is the obstacle currently overlapping or imminently about to overlap 
-            #    the bird on the x-axis?
-            #    - obstacle.rect.right > self.rect.left: Ensures obstacle hasn't fully passed bird's left side.
-            #    - obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE:
-            #      Ensures obstacle's front is within reaction zone extending from bird's front (right edge).
-            is_horizontally_relevant = (obstacle.rect.right > self.rect.left and
-                                        obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE)
+            y_range = 20
+            y_overlap = (self.rect.top - y_range < obstacle.rect.bottom and
+                            self.rect.bottom +  y_range > obstacle.rect.top)
 
-            if is_horizontally_relevant:
-                # 2. Direct Y-Overlap Check:
-                #    Are the bird's and obstacle's y-ranges currently overlapping?
-                y_overlap = (self.rect.top < obstacle.rect.bottom and
-                             self.rect.bottom > obstacle.rect.top)
+            if y_overlap:
+                self.obstacle_found_ahead = True # Signal that an obstacle requires evasion
+                if self.rect.centery < obstacle.rect.centery:
+                    accumulated_vertical_force_component -= VERTICAL_EVASION_MAGNITUDE
+                elif self.rect.centery > obstacle.rect.centery:
+                    accumulated_vertical_force_component += VERTICAL_EVASION_MAGNITUDE
 
-                if y_overlap:
-                    self.obstacle_found_ahead = True # Signal that an obstacle requires evasion
-                    
-                    # 3. Determine Vertical Evasion Direction (No cone calculation):
-                    #    Compare y-centers to decide whether to push the bird up or down.
-                    if self.rect.centery < obstacle.rect.centery:
-                        # Bird is above obstacle's center, obstacle is "below" bird. Push bird UP.
-                        accumulated_vertical_force_component -= VERTICAL_EVASION_MAGNITUDE
-                    elif self.rect.centery > obstacle.rect.centery:
-                        # Bird is below obstacle's center, obstacle is "above" bird. Push bird DOWN.
-                        accumulated_vertical_force_component += VERTICAL_EVASION_MAGNITUDE
-                    else:
-                        # If y-centers are perfectly aligned, pick a random direction to break the tie.
-                        accumulated_vertical_force_component += random.choice([-1, 1]) * VERTICAL_EVASION_MAGNITUDE
-                        
         if self.obstacle_found_ahead:
             # Apply the calculated purely vertical avoidance force.
             # The x-component of the avoidance force is zero for this strategy.

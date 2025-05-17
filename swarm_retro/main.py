@@ -3,7 +3,6 @@ import random
 
 from Bird_class import Bird
 from SliderManagerClass import SliderManager
-from SpatialGridClass import SpatialGrid
 from Obstacles import Obstacle
 from FoodClass import Food  # Import the Food class
 
@@ -17,7 +16,7 @@ pygame.display.set_caption("Flocking Birds - Buttons")
 font = pygame.font.Font(None, 30)
 
 # Create a list of birds
-num_birds = 200
+num_birds = 100
 birds = []
 for _ in range(num_birds):
     bird_x = random.randint(20, width - 20)
@@ -25,7 +24,7 @@ for _ in range(num_birds):
     birds.append(Bird(bird_x, bird_y, width, height))
 
 # --- Obstacle Settings ---
-DESIRED_NUM_OBSTACLES = 10
+DESIRED_NUM_OBSTACLES = 6
 OBSTACLE_WIDTH = 30  # Define a width for obstacles
 OBSTACLE_HEIGHT = 30  # Define a height for obstacles
 OBSTACLE_SPEED = 3  # Define a speed for obstacles (pixels per frame)
@@ -46,7 +45,7 @@ food_group = pygame.sprite.Group()
 # Food spawning variables
 food_spawn_timer = 0
 food_spawn_interval = 2  # Spawn food every 2 frames
-max_food_on_screen = 100  # Optional: limit the maximum number of food items
+max_food_on_screen = 30  # Optional: limit the maximum number of food items
 
 
 def spawn_food():
@@ -99,7 +98,7 @@ while running:
     )  # Birds now use spatial partitioning
     obstacle_group.update()
     obstacle_frame_counter += 1
-    if obstacle_frame_counter >= 45:
+    if obstacle_frame_counter >= 60:
         obstacle_frame_counter = 0
         manage_obstacles()
     birds_group.draw(screen)
