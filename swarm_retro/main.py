@@ -84,6 +84,8 @@ avg_cohesion = 0
 avg_alignment = 0
 avg_separation = 0
 avg_avoidance = 0
+avg_food_attraction = 0
+
 running = True
 while running:
     for event in pygame.event.get():
@@ -108,21 +110,25 @@ while running:
             total_alignment = 0
             total_separation = 0
             total_avoidance = 0
+            total_food_attraction = 0
             for bird_sprite in current_bird_sprites:
                 total_cohesion += bird_sprite.cohesion_strength
                 total_alignment += bird_sprite.alignment_strength
                 total_separation += bird_sprite.separation_strength
                 total_avoidance += bird_sprite.avoidance_strength
+                total_food_attraction += bird_sprite.food_attraction_strength
 
             avg_cohesion = total_cohesion / num_current_birds
             avg_alignment = total_alignment / num_current_birds
             avg_separation = total_separation / num_current_birds
             avg_avoidance = total_avoidance / num_current_birds
+            avg_food_attraction = total_food_attraction / num_current_birds
         else:
             avg_cohesion = 0
             avg_alignment = 0
             avg_separation = 0
             avg_avoidance = 0
+            avg_food_attraction = 0
 
         manage_obstacles()
     birds_group.draw(screen)
@@ -165,6 +171,12 @@ while running:
         f"Avg Avoidance: {avg_avoidance:.3f}", True, (0, 0, 0)
     )
     screen.blit(avg_avoidance_surface, (10, stats_y_start + 4 * line_height))
+
+    avg_food_attraction_surface = font.render(
+        f"Avg Food Attraction: {avg_food_attraction:.3f}", True, (0, 0, 0)
+    )
+    screen.blit(avg_food_attraction_surface, (10, stats_y_start + 5 * line_height))
+
     # --- End Statistics Display ---
 
     pygame.display.flip()
