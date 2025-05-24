@@ -286,7 +286,7 @@ class Bird(pygame.sprite.Sprite):
             neighbors_with_distances.append((dist_sq, other_bird))
 
         closest_neighbor_tuples = heapq.nsmallest(
-            NUM_FLOCK_NEIGHBOARS, neighbors_with_distances
+            NUM_FLOCK_NEIGHBORS, neighbors_with_distances
         )
         closest_birds = [bird_tuple[1] for bird_tuple in closest_neighbor_tuples]
         return closest_birds
