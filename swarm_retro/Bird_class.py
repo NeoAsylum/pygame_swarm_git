@@ -2,13 +2,7 @@ import heapq
 import math
 import random
 import pygame
-
-white = (255, 255, 255)
-blue = (0, 0, 255)
-color = (20, 20, 20)
-radius = 3
-separation_distance = 50
-COS_30_DEGREES = math.cos(math.radians(30))  # approx 0.866
+from env import *
 
 
 class Bird(pygame.sprite.Sprite):
@@ -18,24 +12,18 @@ class Bird(pygame.sprite.Sprite):
         self,
         x,
         y,
-        width,
-        height,
         cohesion_strength=0.10,
         alignment_strength=0.13,
         separation_strength=0.7,
-        global_speed_factor=1.5,
         avoidance_strength=0.5,
         food_attraction_strength=0.01,
-        num_flock_neighbors=5,
-        reproduction_threshold=1,
     ):
         super().__init__()
-        self.scree_width = width  # Store screen width
-        self.screen_height = height  # Store screen height
+        self.scree_width = SCREEN_WIDTH  # Store screen width
+        self.screen_height = SCREEN_HEIGHT  # Store screen height
         self.cohesion_strength = cohesion_strength * random.uniform(0.9, 1.1)
         self.alignment_strength = alignment_strength * random.uniform(0.9, 1.1)
         self.separation_strength = separation_strength * random.uniform(0.9, 1.1)
-        self.global_speed_factor = global_speed_factor
         self.avoidance_strength = avoidance_strength * random.uniform(0.9, 1.1)
         self.x = x
         self.y = y
@@ -47,15 +35,13 @@ class Bird(pygame.sprite.Sprite):
             self.speed_x /= magnitude
             self.speed_y /= magnitude
 
-        self.radius = 3
+        self.radius = DEFAULT_RADIUS
         self.color = (20, 20, 20)
         self.separation_distance = 50 * random.uniform(0.9, 1.1)
         self.food_counter = 0
         self.food_attraction_strength = food_attraction_strength * random.uniform(
             0.9, 1.1
         )  # Store food attraction strength
-        self.num_flock_neighbors = num_flock_neighbors
-        self.reproduction_threshold = reproduction_threshold  # Store threshold
 
         # --- Create the Base Image (Triangle pointing right) ---
         # Size for the triangle base image
@@ -84,8 +70,8 @@ class Bird(pygame.sprite.Sprite):
         self.obstacle_found_ahead = False
 
     def move(self):
-        self.x += self.speed_x * self.global_speed_factor
-        self.y += self.speed_y * self.global_speed_factor
+        self.x += self.speed_x * GLOBAL_SPEED_FACTOR
+        self.y += self.speed_y * GLOBAL_SPEED_FACTOR
 
         # Instant boundary reversal
         if self.x <= self.radius or self.x >= self.scree_width - self.radius:
@@ -233,7 +219,7 @@ class Bird(pygame.sprite.Sprite):
                 closest_food.kill()  # Remove food from all groups
                 self.food_counter += 1
                 # --- Reproduction Logic ---
-                if self.food_counter >= self.reproduction_threshold:
+                if self.food_counter >= REPRODUCTION_THRESHOLD:
                     self.food_counter = 0  # Reset counter for this bird
 
                     spawn_x = self.x + random.uniform(-15, 15)  # Spawn near parent
@@ -252,16 +238,11 @@ class Bird(pygame.sprite.Sprite):
                     new_offspring = Bird(
                         x=spawn_x,
                         y=spawn_y,
-                        width=self.scree_width,
-                        height=self.screen_height,
                         cohesion_strength=self.cohesion_strength,
                         alignment_strength=self.alignment_strength,
                         separation_strength=self.separation_strength,
-                        global_speed_factor=self.global_speed_factor,
                         avoidance_strength=self.avoidance_strength,
                         food_attraction_strength=self.food_attraction_strength,
-                        num_flock_neighbors=self.num_flock_neighbors,
-                        reproduction_threshold=self.reproduction_threshold,  # Pass on threshold
                     )
                     all_birds_group.add(new_offspring)
 
@@ -305,7 +286,7 @@ class Bird(pygame.sprite.Sprite):
             neighbors_with_distances.append((dist_sq, other_bird))
 
         closest_neighbor_tuples = heapq.nsmallest(
-            self.num_flock_neighbors, neighbors_with_distances
+            NUM_FLOCK_NEIGHBOARS, neighbors_with_distances
         )
         closest_birds = [bird_tuple[1] for bird_tuple in closest_neighbor_tuples]
         return closest_birds

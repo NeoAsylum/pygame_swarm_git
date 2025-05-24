@@ -6,27 +6,6 @@ from Bird_class import Bird
 from Obstacles import Obstacle
 from FoodClass import Food
 
-# Assuming env.py contains your game environment constants
-# For example:
-# SCREEN_WIDTH = 1800
-# SCREEN_HEIGHT = 1000
-# INITIAL_NUM_BIRDS = 50
-# FOOD_SPAWN_INTERVAL_FRAMES = 2
-# MAX_FOOD_ON_SCREEN = 30
-# FOOD_SIZE = 10 # Example for food dimensions
-# WHITE = (255, 255, 255)
-# BLACK = (0, 0, 0)
-# UI_FONT_SIZE = 30
-# UI_LINE_HEIGHT = 30
-# UI_PADDING = 10
-# STATS_UPDATE_INTERVAL_FRAMES = 30 # Renamed obstacle_frame_counter's threshold
-# FPS = 120
-# DESIRED_NUM_OBSTACLES = 8
-# OBSTACLE_WIDTH = 30
-# OBSTACLE_HEIGHT = 30
-# OBSTACLE_SPEED = 4
-# OBSTACLE_HIGH_BIRD_THRESHOLD = 120 # For the condition in manage_obstacles
-
 from env import *  # Import constants from your env.py file
 
 
@@ -70,7 +49,7 @@ class Game:
             bird_x = random.randint(20, SCREEN_WIDTH - 20)
             bird_y = random.randint(20, SCREEN_HEIGHT - 20)
             # Pass screen dimensions if Bird class uses them for boundary checks
-            bird = Bird(bird_x, bird_y, SCREEN_WIDTH, SCREEN_HEIGHT)
+            bird = Bird(bird_x, bird_y)
             self.birds_group.add(bird)
 
     def _spawn_food(self):

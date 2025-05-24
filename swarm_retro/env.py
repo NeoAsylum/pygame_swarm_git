@@ -1,7 +1,7 @@
 # --- Constants ---
 SCREEN_WIDTH = 1800
 SCREEN_HEIGHT = 1000
-FPS = 120 # Target FPS
+FPS = 90
 
 # Colors
 WHITE = (255, 255, 255)
@@ -29,3 +29,20 @@ UI_FONT_SIZE = 30
 UI_PADDING = 10
 UI_LINE_HEIGHT = 30
 STATS_UPDATE_INTERVAL_FRAMES = 30 # How often to recalculate and display average stats
+# Default visual properties (can be overridden by instance parameters if needed)
+DEFAULT_COLOR = (20, 20, 20)
+DEFAULT_RADIUS = 3
+
+# Behavioral tuning constants (consider moving to __init__ if they need to be instance-specific from the start)
+# Or if they are truly global for all birds, class attributes are fine.
+COHESION_FORCE_DIVISOR = 10.0
+SEPARATION_FORCE_MAGNITUDE = 300.0
+SEPARATION_STRENGTH_DIVISOR = 30.0
+FORCE_APPLICATION_SCALE = 0.03 # Scales how much forces affect velocity per update
+
+OBSTACLE_REACTION_DISTANCE_HORIZONTAL = 200
+OBSTACLE_EVASION_Y_RANGE = 20
+OBSTACLE_VERTICAL_EVASION_MAGNITUDE = 1.5
+NUM_FLOCK_NEIGHBOARS = 5
+REPRODUCTION_THRESHOLD = 1
+GLOBAL_SPEED_FACTOR= 1.5
