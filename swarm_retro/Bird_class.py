@@ -12,10 +12,10 @@ class Bird(pygame.sprite.Sprite):
         self,
         x,
         y,
-        cohesion_strength=0.10,
-        alignment_strength=0.13,
-        separation_strength=0.7,
-        avoidance_strength=0.5,
+        cohesion_strength=0.05,
+        alignment_strength=0.05,
+        separation_strength=0.2,
+        avoidance_strength=1.2,
         food_attraction_strength=0.01,
     ):
         super().__init__()
@@ -122,8 +122,8 @@ class Bird(pygame.sprite.Sprite):
         )
 
     def apply_new_velocity(self, force_x, force_y, weight):
-        self.speed_x += force_x * weight * 0.03
-        self.speed_y += force_y * weight * 0.03
+        self.speed_x += force_x * weight * 0.027
+        self.speed_y += force_y * weight * 0.027
 
         magnitude = math.sqrt(self.speed_x**2 + self.speed_y**2)
         if magnitude > 0:
@@ -156,7 +156,7 @@ class Bird(pygame.sprite.Sprite):
                 and obstacle.rect.left < self.rect.right + HORIZONTAL_REACTION_DISTANCE
             )
             if is_horizontally_close:
-                y_range = 20
+                y_range = 30
                 y_overlap = (
                     self.rect.top - y_range < obstacle.rect.bottom
                     and self.rect.bottom + y_range > obstacle.rect.top
