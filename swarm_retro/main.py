@@ -45,6 +45,7 @@ class Game:
         self.avg_separation = 0.0
         self.avg_avoidance = 0.0
         self.avg_food_attraction = 0.0
+        self.avg_obstacle_avoidance_distance = 0.0
 
         if not hasattr(Bird, "collision_count"):
             Bird.collision_count = 0
@@ -57,6 +58,7 @@ class Game:
             "AvgSeparation": [],
             "AvgAvoidance": [],
             "AvgFoodAttraction": [],
+            "AvgAvoidanceDistance": [],
         }
         self.data_point_counter = 0 
 
@@ -118,8 +120,9 @@ class Game:
             self.avg_separation = sum(getattr(b, "separation_strength", 0) for b in current_bird_sprites) / self.num_current_birds
             self.avg_avoidance = sum(getattr(b, "avoidance_strength", 0) for b in current_bird_sprites) / self.num_current_birds
             self.avg_food_attraction = sum(getattr(b, "food_attraction_strength", 0) for b in current_bird_sprites) / self.num_current_birds
+            self.avg_obstacle_avoidance_distance = sum(getattr(b, "obstacle_avoidance_distance", 0) for b in current_bird_sprites) / self.num_current_birds
         else:
-            self.avg_cohesion = self.avg_alignment = self.avg_separation = self.avg_avoidance = self.avg_food_attraction = 0.0
+            self.avg_cohesion = self.avg_alignment = self.avg_separation = self.avg_avoidance = self.avg_food_attraction = self.avg_obstacle_avoidance_distance = 0.0
 
         self.frame_counter_for_logging_stats += 1
         if self.frame_counter_for_logging_stats >= self.frames_to_count_stats:
@@ -131,6 +134,7 @@ class Game:
             self.graph_data["AvgSeparation"].append(self.avg_separation)
             self.graph_data["AvgAvoidance"].append(self.avg_avoidance)
             self.graph_data["AvgFoodAttraction"].append(self.avg_food_attraction)
+            self.graph_data["AvgAvoidanceDistance"].append(self.avg_obstacle_avoidance_distance)
             
             if self.plotter.is_graph_showing:
                 self.plotter.update_plot_with_new_data(self.graph_time_steps, self.graph_data)

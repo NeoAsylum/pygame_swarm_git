@@ -8,8 +8,8 @@ class GamePlotter:
         self.ax = None
         self.plot_lines = {}
         self.is_graph_showing = initial_is_showing
-        self.graph_data_keys = ["AvgCohesion", "AvgAlignment", "AvgSeparation", "AvgAvoidance", "AvgFoodAttraction"]
-        self.colors = ["blue", "green", "red", "purple", "orange"]
+        self.graph_data_keys = ["AvgCohesion", "AvgAlignment", "AvgSeparation", "AvgAvoidance", "AvgFoodAttraction","AvgAvoidanceDistance"]
+        self.colors = ["blue", "green", "red", "purple", "orange", "brown"]
 
         if self.is_graph_showing:
             self.open_graph_window([], {key: [] for key in self.graph_data_keys}) # Pass empty initial data
