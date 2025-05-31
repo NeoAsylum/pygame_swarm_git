@@ -109,6 +109,11 @@ class Game:
         if spawn_condition_met:
             new_obstacle = Obstacle()
             self.obstacle_group.add(new_obstacle)
+            if(self.num_current_birds > obs_thresh):
+                how_many_too_many = int(round((self.num_current_birds - obs_thresh)/10,0))
+                for _ in range(how_many_too_many):
+                    new_obstacle = Obstacle()
+                    self.obstacle_group.add(new_obstacle)
 
     def _calculate_and_update_stats(self):
         current_bird_sprites = self.birds_group.sprites()
