@@ -13,7 +13,7 @@ INITIAL_NUM_BIRDS = 50
 
 # --- Obstacle Settings ---
 # General obstacle settings (some might be superseded by specific comet settings below)
-DESIRED_NUM_OBSTACLES = 8
+DESIRED_NUM_OBSTACLES = 6
 OBSTACLE_WIDTH = 40 # Original general obstacle width, may not be directly used by comet head
 OBSTACLE_HEIGHT = 40 # Original general obstacle height, may not be directly used by comet head
 OBSTACLE_SPEED = 5   # This is used as the comet's speed
@@ -38,8 +38,8 @@ COMET_PARTICLE_ALPHA_DECAY = 10              # Amount alpha fades per frame
 
 # Food settings
 FOOD_SPAWN_INTERVAL_FRAMES = 2 # Spawn food every N frames
-MAX_FOOD_ON_SCREEN = 25
-FOOD_SIZE = 10 # Assuming square food
+MAX_FOOD_ON_SCREEN = 100
+FOOD_SIZE = 5 # Assuming square food
 
 # UI and Stats
 UI_FONT_SIZE = 30
@@ -61,6 +61,6 @@ OBSTACLE_REACTION_DISTANCE_HORIZONTAL = 200 # For bird AI
 OBSTACLE_EVASION_Y_RANGE = 20               # For bird AI
 OBSTACLE_VERTICAL_EVASION_MAGNITUDE = 1.5   # For bird AI
 NUM_FLOCK_NEIGHBORS = 5
-REPRODUCTION_THRESHOLD = 1
+REPRODUCTION_THRESHOLD = 2
 GLOBAL_SPEED_FACTOR= 1.5
 VERTICAL_EVASION_MAGNITUDE = 1.5

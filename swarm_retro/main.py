@@ -86,15 +86,11 @@ class Game:
 
     def _spawn_food(self):
         self.food_spawn_timer += 1
-        f_spawn_interval = FOOD_SPAWN_INTERVAL_FRAMES
-        if self.food_spawn_timer >= f_spawn_interval:
+        if self.food_spawn_timer >= FOOD_SPAWN_INTERVAL_FRAMES:
             self.food_spawn_timer = 0
-            max_food = MAX_FOOD_ON_SCREEN
-            obs_thresh = OBSTACLE_HIGH_BIRD_THRESHOLD
-            f_size = FOOD_SIZE
-            if (len(self.food_group) < max_food or self.num_current_birds < obs_thresh):
-                food_x = random.randint(10, SCREEN_WIDTH - 10 - f_size)
-                food_y = random.randint(10, SCREEN_HEIGHT - 10 - f_size)
+            if (len(self.food_group) < MAX_FOOD_ON_SCREEN):
+                food_x = random.randint(10, SCREEN_WIDTH - 10 - FOOD_SIZE)
+                food_y = random.randint(10, SCREEN_HEIGHT - 10 - FOOD_SIZE)
                 new_food = Food(food_x, food_y)
                 self.food_group.add(new_food)
 
