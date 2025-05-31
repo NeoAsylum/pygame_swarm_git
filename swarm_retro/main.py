@@ -42,11 +42,11 @@ class Game:
         self.data_point_counter = 0
 
         # --- Matplotlib Graph Setup via GamePlotter ---
-        self.plotter = GamePlotter(initial_is_showing=False)  # Or True to start open
+        self.plotter = GamePlotter()
 
         # --- Pygame Button for Graph ---
         button_width = 140
-        button_height = (UI_LINE_HEIGHT) + 5
+        button_height = UI_LINE_HEIGHT + 5
         self.toggle_graph_button_rect = pygame.Rect(
             SCREEN_WIDTH - button_width - UI_PADDING,
             UI_PADDING,
