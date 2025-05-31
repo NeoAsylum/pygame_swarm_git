@@ -19,8 +19,7 @@ class GamePlotter:
             try:
                 plt.close(self.fig)
             except Exception:
-                pass # Ignore if already closed or error during close
-
+                pass 
         plt.ion() # Interactive mode on
         self.fig, self.ax = plt.subplots(figsize=(10, 6))
         self.plot_lines = {}
@@ -38,11 +37,7 @@ class GamePlotter:
 
         plt.show(block=False)
         self.is_graph_showing = True
-        if self.fig:
-            try:
-                self.fig.canvas.manager.set_window_title("Flocking Stats Plot (Memory)")
-            except AttributeError: # e.g. if backend doesn't have manager or set_window_title
-                pass
+        self.fig.canvas.manager.set_window_title("Flocking Stats Plot (Memory)")
 
 
     def redraw_all_graph_data(self, time_steps, data_series_map):
