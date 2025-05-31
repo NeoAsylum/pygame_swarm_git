@@ -12,11 +12,11 @@ class Bird(pygame.sprite.Sprite):
         self,
         x,
         y,
-        cohesion_strength=0.05,
-        alignment_strength=0.05,
-        separation_strength=0.2,
-        avoidance_strength=1.2,
-        food_attraction_strength=0.01,
+        cohesion_strength=0.1,
+        alignment_strength=0.1,
+        separation_strength=0.1,
+        avoidance_strength=0.1,
+        food_attraction_strength=0.1,
     ):
         super().__init__()
         self.scree_width = SCREEN_WIDTH  # Store screen width
@@ -102,7 +102,7 @@ class Bird(pygame.sprite.Sprite):
         cohesion_force_x = (avg_x - self.x) / 10
         cohesion_force_y = (avg_y - self.y) / 10
         self.apply_new_velocity(
-            cohesion_force_x, cohesion_force_y, self.cohesion_strength / 2
+            cohesion_force_x, cohesion_force_y, self.cohesion_strength
         )
 
         # Separation
@@ -118,7 +118,7 @@ class Bird(pygame.sprite.Sprite):
                 separation_force_x += diff_x * force
                 separation_force_y += diff_y * force
         self.apply_new_velocity(
-            separation_force_x, separation_force_y, self.separation_strength / 30
+            separation_force_x, separation_force_y, self.separation_strength / 15
         )
 
     def apply_new_velocity(self, force_x, force_y, weight):
@@ -149,7 +149,7 @@ class Bird(pygame.sprite.Sprite):
         )
         # Base magnitude for the vertical evasion force component.
         # This will be scaled by self.avoidance_strength in apply_new_velocity.
-        VERTICAL_EVASION_MAGNITUDE = 1.5  # (tune this value)
+        VERTICAL_EVASION_MAGNITUDE = 1.5  
         for obstacle in obstacles_group:
             is_horizontally_close = (
                 obstacle.rect.right > self.rect.left
@@ -181,7 +181,7 @@ class Bird(pygame.sprite.Sprite):
             self.apply_new_velocity(
                 0,  # No horizontal steering from this specific avoidance logic
                 accumulated_vertical_force_component,
-                self.avoidance_strength,  # Bird's overall avoidance strength attribute
+                self.avoidance_strength*10,  # Bird's overall avoidance strength attribute
             )
 
     def move_towards_food(self, food_group, all_birds_group):
@@ -209,7 +209,7 @@ class Bird(pygame.sprite.Sprite):
             food_force_y = closest_food.rect.centery - self.y
 
             self.apply_new_velocity(
-                food_force_x, food_force_y, self.food_attraction_strength
+                food_force_x, food_force_y, self.food_attraction_strength/10
             )
 
             # --- EATING FOOD ---
