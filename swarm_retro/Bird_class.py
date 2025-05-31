@@ -34,22 +34,15 @@ class Bird(pygame.sprite.Sprite):
         angle = random.uniform(0, 2 * math.pi)
         self.speed_x = math.cos(angle)
         self.speed_y = math.sin(angle)
-        magnitude = math.hypot(self.speed_x, self.speed_y)  # Using math.hypot
-        if magnitude > 0:
-            self.speed_x /= magnitude
-            self.speed_y /= magnitude
-
         # --- Bird Visual Properties ---
-        self.bird_width = 15
-        self.bird_height = 10
+        self.bird_width = DEFAULT_RADIUS * 5
+        self.bird_height = DEFAULT_RADIUS * 3
 
         self.body_color = (255, 230, 150)
         self.wing_color = (240, 210, 130)
         self.beak_color = (255, 165, 0)
         self.eye_color = (0, 0, 0)
 
-        # Update self.radius based on new bird dimensions for boundary checks.
-        # This replaces the old self.radius = DEFAULT_RADIUS
         self.radius = max(self.bird_width, self.bird_height) // 2
         # --- End of New Tiny Bird Visual Properties ---
 
@@ -129,8 +122,8 @@ class Bird(pygame.sprite.Sprite):
         # Cohesion
         avg_x = sum(bird.x for bird in closest_birds) / len(closest_birds)
         avg_y = sum(bird.y for bird in closest_birds) / len(closest_birds)
-        cohesion_force_x = (avg_x - self.x) / 10  # User's original / 10
-        cohesion_force_y = (avg_y - self.y) / 10  # User's original / 10
+        cohesion_force_x = (avg_x - self.x) / 10
+        cohesion_force_y = (avg_y - self.y) / 10
         self.apply_new_velocity(
             cohesion_force_x, cohesion_force_y, self.cohesion_strength
         )
@@ -138,7 +131,7 @@ class Bird(pygame.sprite.Sprite):
         # Separation
         separation_force_x = 0
         separation_force_y = 0
-        epsilon = 0.00001  # User's original epsilon
+        epsilon = 0.00001
         for other in closest_birds:
             distance = (self.x - other.x) ** 2 + (
                 self.y - other.y

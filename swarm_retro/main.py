@@ -26,15 +26,8 @@ class Game:
         self.food_spawn_timer = 0
         self.stats_update_timer = 0
         self.frame_counter_for_logging_stats = 0
-        self.frames_to_count_stats = 3
 
         self.num_current_birds = 0
-        self.avg_cohesion = 0.0
-        self.avg_alignment = 0.0
-        self.avg_separation = 0.0
-        self.avg_avoidance = 0.0
-        self.avg_food_attraction = 0.0
-        self.avg_obstacle_avoidance_distance = 0.0
 
         # --- Data Storage for Graph (In-Memory Lists) ---
         self.graph_time_steps = []
@@ -138,7 +131,7 @@ class Game:
             ) = self.avg_food_attraction = self.avg_obstacle_avoidance_distance = 0.0
 
         self.frame_counter_for_logging_stats += 1
-        if self.frame_counter_for_logging_stats >= self.frames_to_count_stats:
+        if self.frame_counter_for_logging_stats >= STATS_UPDATE_INTERVAL_FRAMES/STATS_UPDATE_INTERVAL_FRAMES:
             self.frame_counter_for_logging_stats = 0
             self.graph_time_steps.append(self.data_point_counter)
             self.graph_data["AvgCohesion"].append(self.avg_cohesion)
