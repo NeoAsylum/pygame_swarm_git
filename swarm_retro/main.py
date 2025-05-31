@@ -104,7 +104,7 @@ class Game:
         # Spawn if below desired or if bird count is high (even if desired met)
         spawn_condition_met = (
             len(self.obstacle_group) < desired_obs or
-            (len(self.obstacle_group) < desired_obs + 2 and self.num_current_birds > obs_thresh) # Example: allow a couple more if many birds
+            (self.num_current_birds > obs_thresh) # Example: allow a couple more if many birds
         )
         if spawn_condition_met:
             new_obstacle = Obstacle()
