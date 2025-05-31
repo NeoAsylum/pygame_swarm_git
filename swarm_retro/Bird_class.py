@@ -2,7 +2,7 @@ import heapq
 import math
 import random
 import pygame
-from env import *  # Assuming this imports SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_RADIUS (if still used), GLOBAL_SPEED_FACTOR, etc.
+from env import *
 
 
 class Bird(pygame.sprite.Sprite):
@@ -30,10 +30,14 @@ class Bird(pygame.sprite.Sprite):
         self.obstacle_avoidance_distance = obstacle_avoidance_distance * random.uniform(
             0.9, 1.1
         )
+        self.food_attraction_strength = food_attraction_strength * random.uniform(
+            0.9, 1.1
+        )
 
         angle = random.uniform(0, 2 * math.pi)
         self.speed_x = math.cos(angle)
         self.speed_y = math.sin(angle)
+
         # --- Bird Visual Properties ---
         self.bird_width = DEFAULT_RADIUS * 5
         self.bird_height = DEFAULT_RADIUS * 3
@@ -50,9 +54,7 @@ class Bird(pygame.sprite.Sprite):
             0.9, 1.1
         )  # User's original value
         self.food_counter = 0
-        self.food_attraction_strength = food_attraction_strength * random.uniform(
-            0.9, 1.1
-        )
+
 
         # --- Create the Base Image (Tiny Bird facing right) ---
         self.base_image = self._create_tiny_bird_image()
@@ -60,7 +62,6 @@ class Bird(pygame.sprite.Sprite):
         # Pygame sprite requirements
         self.image = self.base_image.copy()
         self.rect = self.image.get_rect(center=(self.x, self.y))
-        self.obstacle_found_ahead = False
 
     def _create_tiny_bird_image(self):
         """Creates a small, bird-like image facing right."""
@@ -157,7 +158,6 @@ class Bird(pygame.sprite.Sprite):
 
     def avoid_obstacles(self, obstacles_group):
         accumulated_vertical_force_component = 0
-        self.obstacle_found_ahead = False
 
         for obstacle in obstacles_group:
             obstacle_check_rect = obstacle.rect
@@ -175,7 +175,6 @@ class Bird(pygame.sprite.Sprite):
                 )
 
                 if y_overlap:
-                    self.obstacle_found_ahead = True
                     if self.rect.centery < obstacle_check_rect.centery:
                         accumulated_vertical_force_component -= (
                             OBSTACLE_VERTICAL_EVASION_MAGNITUDE
@@ -185,10 +184,9 @@ class Bird(pygame.sprite.Sprite):
                             OBSTACLE_VERTICAL_EVASION_MAGNITUDE
                         )
 
-        if self.obstacle_found_ahead:
-            self.apply_new_velocity(
-                0, accumulated_vertical_force_component, self.avoidance_strength * 10
-            )
+        self.apply_new_velocity(
+            0, accumulated_vertical_force_component, self.avoidance_strength * 10
+        )
 
     def move_towards_food(self, food_group, all_birds_group):
         if not food_group:
@@ -257,13 +255,12 @@ class Bird(pygame.sprite.Sprite):
                     self.kill()
                     return
 
-        if not self.obstacle_found_ahead:
-            closest_birds_for_flocking = self.get_closest_n_birds(birds_group)
-            if closest_birds_for_flocking:  # Only flock if neighbors are found
-                self.flock(closest_birds_for_flocking)
-            self.move_towards_food(
-                food_group, birds_group
-            )  # Pass birds_group for reproduction
+        closest_birds_for_flocking = self.get_closest_n_birds(birds_group)
+        if closest_birds_for_flocking:  # Only flock if neighbors are found
+            self.flock(closest_birds_for_flocking)
+        self.move_towards_food(
+            food_group, birds_group
+        )  # Pass birds_group for reproduction
 
         if self.speed_x != 0 or self.speed_y != 0:
             angle_deg = math.degrees(math.atan2(-self.speed_y, self.speed_x))

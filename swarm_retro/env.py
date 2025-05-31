@@ -41,7 +41,7 @@ FOOD_SIZE = 5 # Assuming square food
 UI_FONT_SIZE = 30
 UI_PADDING = 10
 UI_LINE_HEIGHT = 30
-STATS_UPDATE_INTERVAL_FRAMES = 30 # How often to recalculate and display average stats
+STATE_UPDATE_INTERVAL_FRAMES = 30 # How often to recalculate and display average stats
 STATS_UPDATE_INTERVAL_FRAMES = 100 # How often to recalculate and display average stats
 
 DEFAULT_RADIUS = 3

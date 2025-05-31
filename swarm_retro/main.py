@@ -45,13 +45,11 @@ class Game:
         self.plotter = GamePlotter()
 
         # --- Pygame Button for Graph ---
-        button_width = 140
-        button_height = UI_LINE_HEIGHT + 5
         self.toggle_graph_button_rect = pygame.Rect(
-            SCREEN_WIDTH - button_width - UI_PADDING,
+            SCREEN_WIDTH - 140 - UI_PADDING,
             UI_PADDING,
-            button_width,
-            button_height,
+            140,
+            UI_LINE_HEIGHT + 5,
         )
         self.button_color = (200, 200, 200)
         self.button_hover_color = (230, 230, 230)
@@ -131,7 +129,10 @@ class Game:
             ) = self.avg_food_attraction = self.avg_obstacle_avoidance_distance = 0.0
 
         self.frame_counter_for_logging_stats += 1
-        if self.frame_counter_for_logging_stats >= STATS_UPDATE_INTERVAL_FRAMES/STATS_UPDATE_INTERVAL_FRAMES:
+        if (
+            self.frame_counter_for_logging_stats
+            >= STATS_UPDATE_INTERVAL_FRAMES / STATE_UPDATE_INTERVAL_FRAMES
+        ):
             self.frame_counter_for_logging_stats = 0
             self.graph_time_steps.append(self.data_point_counter)
             self.graph_data["AvgCohesion"].append(self.avg_cohesion)
@@ -213,7 +214,7 @@ class Game:
         self.obstacle_group.update()
         self._spawn_food()
         self.stats_update_timer += 1
-        if self.stats_update_timer >= STATS_UPDATE_INTERVAL_FRAMES:
+        if self.stats_update_timer >= STATE_UPDATE_INTERVAL_FRAMES:
             self.stats_update_timer = 0
             self._calculate_and_update_stats()
             self._manage_obstacles()
