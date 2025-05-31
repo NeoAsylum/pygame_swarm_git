@@ -261,11 +261,29 @@ class Bird(pygame.sprite.Sprite):
 
         # --- 1. Calculate and apply forces ---
         self.avoid_obstacles(obstacles)
-        collided_obstacle = pygame.sprite.spritecollideany(self, obstacles)
-        if collided_obstacle:
+        # --- Modified Collision Detection for Head Collision ---
+        collided_with_head = False
+        for obstacle in obstacles:  # Iterate through each obstacle sprite in the group
+            # Ensure the obstacle has a 'hitbox' attribute (our comets should)
+            if hasattr(obstacle, "hitbox"):
+                if self.rect.colliderect(
+                    obstacle.hitbox
+                ):  # Check bird's rect against obstacle's hitbox
+                    collided_with_head = True
+                    break  # Collision found, no need to check other obstacles
+            else:
+                # Fallback for obstacles that might not have a hitbox (e.g., if you mix obstacle types)
+                # This part is optional if you are sure all obstacles will have a hitbox.
+                if self.rect.colliderect(obstacle.rect):
+                    collided_with_head = True
+                    # print("Warning: Collided with an obstacle that doesn't have a hitbox, using its rect.")
+                    break
+
+        if collided_with_head:
             Bird.collision_count += 1  # Increment score for fatal collision
             self.kill()  # Remove sprite from all groups
             return  # Bird is killed, no further processing needed for this instance
+        # --- End of Modified Collision Detection ---
 
         if not self.obstacle_found_ahead:
             self.flock(self.get_closest_n_birds(birds_group))
