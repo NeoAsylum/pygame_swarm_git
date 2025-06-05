@@ -44,7 +44,8 @@ class GamePlotter:
 
         plt.show(block=False)
         self.is_graph_showing = True
-        self.fig.canvas.manager.set_window_title("Flocking Stats Plot")
+        if self.fig.canvas.manager is not None:
+            self.fig.canvas.manager.set_window_title("Flocking Stats Plot")
 
     def redraw_all_graph_data(self, time_steps, data_series_map):
         max_points_to_show = 200
@@ -58,11 +59,12 @@ class GamePlotter:
                 line_obj.set_data(display_time_steps_hist, display_data_hist)
             else:
                 line_obj.set_data([], [])
-
-        self.ax.relim()
-        self.ax.autoscale_view(True, True, True)
-        self.fig.canvas.draw_idle()
-        self.fig.canvas.flush_events()
+        if self.ax is not None:
+            self.ax.relim()
+            self.ax.autoscale_view(True, True, True)
+        if self.fig is not None:
+            self.fig.canvas.draw_idle()
+            self.fig.canvas.flush_events()
 
     def close_graph_window(self):
         plt.close(self.fig)
@@ -87,8 +89,9 @@ class GamePlotter:
             if label in data_series_map:
                 display_data = data_series_map[label][start_index:]
                 line_obj.set_data(display_time_steps, display_data)
-
-        self.ax.relim()
-        self.ax.autoscale_view(True, True, True)
-        self.fig.canvas.draw_idle()
-        self.fig.canvas.flush_events()
+        if self.ax is not None:
+            self.ax.relim()
+            self.ax.autoscale_view(True, True, True)
+        if self.fig is not None:
+            self.fig.canvas.draw_idle()
+            self.fig.canvas.flush_events()

@@ -240,7 +240,6 @@ class Game:
                     and self.plotter.fig
                     and (
                         not hasattr(self.plotter.fig.canvas.manager, "window")
-                        or not self.plotter.fig.canvas.manager.window
                     )
                 ):
                     self.plotter.close_graph_window()  # Ensure state is consistent
