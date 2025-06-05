@@ -1,3 +1,4 @@
+import os
 from plot import GamePlotter
 import pygame
 import random
@@ -10,7 +11,12 @@ from env import *
 class Game:
     def __init__(self):
         pygame.init()
+        window_pos_x = 50
+        window_pos_y = 50 
+        os.environ['SDL_VIDEO_WINDOW_POS'] = f"{window_pos_x},{window_pos_y}"
+
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        
         pygame.display.set_caption("Flocking Birds")
         self.font = pygame.font.Font(None, UI_FONT_SIZE)
         self.button_font = pygame.font.Font(None, UI_FONT_SIZE - 4)

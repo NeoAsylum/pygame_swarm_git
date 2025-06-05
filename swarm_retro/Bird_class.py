@@ -4,8 +4,8 @@ import random
 import pygame
 from env import *
 
-
 class Bird(pygame.sprite.Sprite):
+    repr_counter = 0
 
     def __init__(
         self,
@@ -233,19 +233,6 @@ class Bird(pygame.sprite.Sprite):
             if pygame.sprite.collide_rect(self, closest_food):
                 closest_food.kill()  # Remove the eaten food
                 self.food_counter += 1
-                if self.food_counter >= REPRODUCTION_THRESHOLD:
-                    self.food_counter = 0  # Reset counter for this parent bird
-                    new_offspring = Bird(
-                        x=self.x,
-                        y=self.y,
-                        cohesion_strength=self.cohesion_strength,
-                        alignment_strength=self.alignment_strength,
-                        separation_strength=self.separation_strength,
-                        avoidance_strength=self.avoidance_strength,
-                        food_attraction_strength=self.food_attraction_strength,
-                        obstacle_avoidance_distance=self.obstacle_avoidance_distance,
-                    )
-                    all_birds_group.add(new_offspring)
 
     def update(self, birds_group, obstacles, food_group):
         self.avoid_obstacles(obstacles)
@@ -261,10 +248,31 @@ class Bird(pygame.sprite.Sprite):
         self.move_towards_food(
             food_group, birds_group
         )  # Pass birds_group for reproduction
-
+        
         if self.speed_x != 0 or self.speed_y != 0:
             angle_deg = math.degrees(math.atan2(-self.speed_y, self.speed_x))
             self.image = pygame.transform.rotate(self.base_image, angle_deg)
+        bird: Bird
+        for bird in birds_group:
+            if bird is not self and pygame.sprite.collide_rect(self, bird):
+                if self.food_counter >= REPRODUCTION_THRESHOLD:
+                    print("toastertoast")
+                    
+                    Bird.repr_counter += 1 # type: ignore
+                    self.food_counter = 0  # Reset counter for this parent bird
+                    bird.food_counter = 0
+                    new_offspring = Bird(
+                        x=self.x,
+                        y=self.y,
+                        cohesion_strength=(self.cohesion_strength + bird.cohesion_strength)/2,
+                        alignment_strength=(self.alignment_strength + bird.alignment_strength)/2,
+                        separation_strength=(self.separation_strength + bird.separation_strength)/2,
+                        avoidance_strength=(self.avoidance_strength + bird.avoidance_strength)/2,
+                        food_attraction_strength=(self.food_attraction_strength + bird.food_attraction_strength)/2,
+                        obstacle_avoidance_distance=(self.obstacle_avoidance_distance + bird.obstacle_avoidance_distance)/2,
+                    )
+                    birds_group.add(new_offspring)
+
 
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.move()
