@@ -5,7 +5,6 @@ import pygame
 from env import *
 
 class Bird(pygame.sprite.Sprite):
-    repr_counter = 0
 
     def __init__(
         self,
@@ -42,9 +41,9 @@ class Bird(pygame.sprite.Sprite):
         self.bird_width = DEFAULT_RADIUS * 5
         self.bird_height = DEFAULT_RADIUS * 3
 
-        self.body_color = (255, 230, 150)
-        self.wing_color = (240, 210, 130)
-        self.beak_color = (255, 165, 0)
+        self.body_color = (170, 190, 220)  # Light bluish-grey
+        self.wing_color = (140, 160, 190)  # Darker bluish-grey
+        self.beak_color = (255, 180, 0)    # Bright orange/yellow
         self.eye_color = (0, 0, 0)
 
         self.radius = max(self.bird_width, self.bird_height) // 2
@@ -57,13 +56,19 @@ class Bird(pygame.sprite.Sprite):
 
 
         # --- Create the Base Image (Tiny Bird facing right) ---
-        self.base_image = self._create_tiny_bird_image()
+        # For animation
+        self.animation_frames = [
+            self._create_tiny_bird_image(wing_offset=0),  # Wings normal
+            self._create_tiny_bird_image(wing_offset=-2) # Wings up
+        ]
+        self.current_frame_index = 0
+        self.animation_timer = 0
+        self.base_image = self.animation_frames[self.current_frame_index]
 
-        # Pygame sprite requirements
         self.image = self.base_image.copy()
         self.rect = self.image.get_rect(center=(self.x, self.y))
 
-    def _create_tiny_bird_image(self):
+    def _create_tiny_bird_image(self, wing_offset=0):
         """Creates a small, bird-like image facing right."""
         image = pygame.Surface((self.bird_width, self.bird_height), pygame.SRCALPHA)
         body_rect = pygame.Rect(0, 1, self.bird_width - 3, self.bird_height - 2)
@@ -71,7 +76,7 @@ class Bird(pygame.sprite.Sprite):
         wing_width = int(self.bird_width * 0.4)
         wing_height = int(self.bird_height * 0.5)
         wing_x = body_rect.centerx - wing_width - 1
-        wing_y = body_rect.centery - wing_height // 2
+        wing_y = body_rect.centery - wing_height // 2 + wing_offset # Apply offset
         pygame.draw.ellipse(
             image, self.wing_color, (wing_x, wing_y, wing_width, wing_height)
         )
@@ -248,17 +253,23 @@ class Bird(pygame.sprite.Sprite):
         self.move_towards_food(
             food_group, birds_group
         )  # Pass birds_group for reproduction
-        
+
+        # Animation
+        self.animation_timer += 1
+        if self.animation_timer > 5: # Change frame every 5 game ticks
+            self.animation_timer = 0
+            self.current_frame_index = (self.current_frame_index + 1) % len(self.animation_frames)
+            self.base_image = self.animation_frames[self.current_frame_index]
+
+
         if self.speed_x != 0 or self.speed_y != 0:
             angle_deg = math.degrees(math.atan2(-self.speed_y, self.speed_x))
+            # Rotate the current base_image (which might be a different animation frame)
             self.image = pygame.transform.rotate(self.base_image, angle_deg)
         bird: Bird
         for bird in birds_group:
             if bird is not self and pygame.sprite.collide_rect(self, bird):
-                if self.food_counter >= REPRODUCTION_THRESHOLD:
-                    print("toastertoast")
-                    
-                    Bird.repr_counter += 1 # type: ignore
+                if self.food_counter >= REPRODUCTION_THRESHOLD:                    
                     self.food_counter = 0  # Reset counter for this parent bird
                     bird.food_counter = 0
                     new_offspring = Bird(

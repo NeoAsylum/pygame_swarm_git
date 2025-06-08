@@ -6,6 +6,7 @@ FPS = 90
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+SKY_BLUE = (135, 206, 235)
 
 # Bird settings
 INITIAL_NUM_BIRDS = 50
@@ -13,7 +14,7 @@ INITIAL_NUM_BIRDS = 50
 # --- Obstacle Settings ---
 DESIRED_NUM_OBSTACLES = 7
 OBSTACLE_SPEED = 4   # This is used as the comet's speed
-OBSTACLE_HIGH_BIRD_THRESHOLD = 120 # Condition to spawn more obstacles
+OBSTACLE_HIGH_BIRD_THRESHOLD = 90 # Condition to spawn more obstacles
 
 # --- Comet Obstacle Specific Settings (Black/Red Theme) ---
 COMET_HEAD_WIDTH = 35
@@ -43,7 +44,7 @@ UI_LINE_HEIGHT = 30
 STATE_UPDATE_INTERVAL_FRAMES = 50 # How often to recalculate and display average stats
 STATS_UPDATE_INTERVAL_FRAMES = 100 # How often to recalculate and display average stats
 
-DEFAULT_RADIUS = 3
+DEFAULT_RADIUS = 4 # Increased from 3 to make birds a bit larger
 
 OBSTACLE_REACTION_DISTANCE_HORIZONTAL = 200
 OBSTACLE_VERTICAL_EVASION_MAGNITUDE = 1.5

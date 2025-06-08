@@ -57,9 +57,9 @@ class Game:
             140,
             UI_LINE_HEIGHT + 5,
         )
-        self.button_color = (200, 200, 200)
-        self.button_hover_color = (230, 230, 230)
-        self.button_text_color = BLACK
+        self.button_color = (100, 150, 200)  # Muted blue
+        self.button_hover_color = (120, 170, 220) # Lighter muted blue
+        self.button_text_color = WHITE # White text for better contrast
 
     def _create_initial_birds(self):
         for _ in range(INITIAL_NUM_BIRDS):
@@ -226,7 +226,7 @@ class Game:
             self._manage_obstacles()
 
     def render(self):
-        self.screen.fill(WHITE)
+        self.screen.fill(SKY_BLUE) # Use new background color
         self.birds_group.draw(self.screen)
         self.obstacle_group.draw(self.screen)
         self.food_group.draw(self.screen)
