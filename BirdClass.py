@@ -2,7 +2,7 @@ import heapq
 import math
 import random
 import pygame
-from env import *
+from ENV import SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_RADIUS, NUM_FLOCK_NEIGHBORS, REPRODUCTION_THRESHOLD, OBSTACLE_REACTION_DISTANCE_HORIZONTAL, OBSTACLE_VERTICAL_EVASION_MAGNITUDE, GLOBAL_SPEED_FACTOR # Import only necessary defaults
 
 class Bird(pygame.sprite.Sprite):
 
@@ -16,8 +16,10 @@ class Bird(pygame.sprite.Sprite):
         avoidance_strength=0.1,
         food_attraction_strength=0.1,
         obstacle_avoidance_distance=0.1,
+        settings=None, # Add settings parameter
     ):
         super().__init__()
+        self.settings = settings # Store the settings
         self.scree_width = SCREEN_WIDTH
         self.screen_height = SCREEN_HEIGHT
         self.cohesion_strength = cohesion_strength * random.uniform(0.9, 1.1)
@@ -98,8 +100,13 @@ class Bird(pygame.sprite.Sprite):
         return image
 
     def move(self):
-        self.x += self.speed_x * GLOBAL_SPEED_FACTOR
-        self.y += self.speed_y * GLOBAL_SPEED_FACTOR
+        # Use GLOBAL_SPEED_FACTOR from settings if available, otherwise from ENV.py
+        current_global_speed_factor = GLOBAL_SPEED_FACTOR # Default from ENV
+        if self.settings and "GLOBAL_SPEED_FACTOR" in self.settings:
+            current_global_speed_factor = self.settings["GLOBAL_SPEED_FACTOR"]
+
+        self.x += self.speed_x * current_global_speed_factor
+        self.y += self.speed_y * current_global_speed_factor
 
         if self.x <= self.radius or self.x >= self.scree_width - self.radius:
             self.speed_x *= -1
@@ -267,9 +274,14 @@ class Bird(pygame.sprite.Sprite):
             # Rotate the current base_image (which might be a different animation frame)
             self.image = pygame.transform.rotate(self.base_image, angle_deg)
         bird: Bird
+        
+        # Use REPRODUCTION_THRESHOLD from settings if available, otherwise from ENV.py
+        current_reproduction_threshold = REPRODUCTION_THRESHOLD # Default from ENV
+        if self.settings and "REPRODUCTION_THRESHOLD" in self.settings:
+            current_reproduction_threshold = self.settings["REPRODUCTION_THRESHOLD"]
+
         for bird in birds_group:
-            if bird is not self and pygame.sprite.collide_rect(self, bird):
-                if self.food_counter >= REPRODUCTION_THRESHOLD:                    
+            if bird is not self and pygame.sprite.collide_rect(self, bird) and self.food_counter >= current_reproduction_threshold:
                     self.food_counter = 0  # Reset counter for this parent bird
                     bird.food_counter = 0
                     new_offspring = Bird(
@@ -281,6 +293,7 @@ class Bird(pygame.sprite.Sprite):
                         avoidance_strength=(self.avoidance_strength + bird.avoidance_strength)/2,
                         food_attraction_strength=(self.food_attraction_strength + bird.food_attraction_strength)/2,
                         obstacle_avoidance_distance=(self.obstacle_avoidance_distance + bird.obstacle_avoidance_distance)/2,
+                        settings=self.settings # Pass settings to offspring
                     )
                     birds_group.add(new_offspring)
 
@@ -293,6 +306,11 @@ class Bird(pygame.sprite.Sprite):
         )
 
     def get_closest_n_birds(self, birds_group):
+        # Use NUM_FLOCK_NEIGHBORS from settings if available, otherwise from ENV.py
+        num_neighbors_to_consider = NUM_FLOCK_NEIGHBORS # Default from ENV
+        if self.settings and "NUM_FLOCK_NEIGHBORS" in self.settings:
+            num_neighbors_to_consider = self.settings["NUM_FLOCK_NEIGHBORS"]
+
         neighbors_with_distances = []
         for other_bird in birds_group.sprites():
             if other_bird is self:
@@ -303,7 +321,7 @@ class Bird(pygame.sprite.Sprite):
             neighbors_with_distances.append((dist_sq, id(other_bird), other_bird))
 
         closest_neighbor_tuples = heapq.nsmallest(
-            NUM_FLOCK_NEIGHBORS,
+            num_neighbors_to_consider,
             neighbors_with_distances,
         )
         closest_birds = [bird_tuple[2] for bird_tuple in closest_neighbor_tuples]

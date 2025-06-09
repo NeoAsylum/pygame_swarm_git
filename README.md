@@ -62,7 +62,7 @@ Beyond basic flocking, the simulation includes:
 
 ## How to Run
 
-Navigate to the project's root directory (e.g., `c:\Users\adria\Downloads\pygame_swarm_git\swarm_retro\`) in your terminal and run:
+Navigate to the project's root directory (e.g., `..\pygame_swarm_git\swarm_retro\`) in your terminal and run:
 
 ```bash
 python main.py
