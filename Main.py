@@ -1,5 +1,7 @@
 import os
 from Plotter import GamePlotter
+import csv
+from datetime import datetime
 import pygame
 import random
 from BirdClass import Bird
@@ -473,6 +475,37 @@ class Game:
         self._create_initial_birds(self.settings["INITIAL_NUM_BIRDS"])
         print(f"Birds re-created with count: {self.settings['INITIAL_NUM_BIRDS']}")
 
+    def _save_graph_data_to_csv(self):
+        if not self.graph_time_steps or not any(self.graph_data.values()):
+            print("No graph data to save.")
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"graph_data_{timestamp}.csv"
+
+        # Prepare headers
+        headers = ["TimeStep"] + list(self.graph_data.keys())
+
+        # Prepare rows
+        # Ensure all data lists are of the same length as graph_time_steps
+        # This handles cases where some data might not have been recorded for every time step
+        num_time_steps = len(self.graph_time_steps)
+        rows = []
+        for i in range(num_time_steps):
+            row = [self.graph_time_steps[i]]
+            for key in self.graph_data.keys():
+                row.append(self.graph_data[key][i] if i < len(self.graph_data[key]) else None)
+            rows.append(row)
+
+        try:
+            with open(filename, "w", newline="") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(headers)
+                writer.writerows(rows)
+            print(f"Graph data saved to {filename}")
+        except IOError as e:
+            print(f"Error saving graph data to CSV: {e}")
+
     def process_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -541,6 +574,7 @@ class Game:
             self.running = False
         finally:
             if self.plotter: # Check if plotter was initialized
+                self._save_graph_data_to_csv() # Save data before closing plotter
                 self.plotter.close_graph_window() # This will also stop the thread
                 print("Matplotlib graph resources cleaned up.")
             pygame.quit()
