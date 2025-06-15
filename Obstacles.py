@@ -6,8 +6,7 @@ from ENV import *
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, speed_x=OBSTACLE_SPEED):
         super().__init__()
-        self.speed_x = speed_x
-
+        self.speed_x = random.uniform(0.8,1.2)*speed_x
         self.head_image_orig = self._create_comet_head_surface()
         self.head_image = self.head_image_orig.copy()
         self.head_width = self.head_image.get_width()

@@ -180,8 +180,9 @@ class Game:
                 round((self.num_current_birds - OBSTACLE_HIGH_BIRD_THRESHOLD) / 10, 0)
             )
             for _ in range(how_many_too_many):
-                new_obstacle = Obstacle(speed_x=self.settings["OBSTACLE_SPEED"])
-                self.obstacle_group.add(new_obstacle)
+                if len(self.obstacle_group) < self.settings["DESIRED_NUM_OBSTACLES"]*2:
+                    new_obstacle = Obstacle(speed_x=self.settings["OBSTACLE_SPEED"])
+                    self.obstacle_group.add(new_obstacle)
         else:
             if len(self.obstacle_group) < self.settings["DESIRED_NUM_OBSTACLES"]:
                 new_obstacle = Obstacle(speed_x=self.settings["OBSTACLE_SPEED"])
