@@ -1,24 +1,28 @@
 import os
-from Plotter import GamePlotter
+import traceback
 import csv
-from datetime import datetime
-import pygame
 import random
-from BirdClass import Bird
-from Obstacles import Obstacle
-from FoodClass import Food
-from ENV import *
+from bird_class import Bird
+from plotter import GamePlotter
+from obstacles import Obstacle
+from food_class import Food
+import pygame
+from datetime import datetime
+
+from env import *
+
 
 class Game:
+    """The main class running and initializing the simulation."""
+
     def __init__(self):
+        """Initializes the game window, settings, and game objects."""
         pygame.init()
         window_pos_x = 50
         window_pos_y = 50
         os.environ["SDL_VIDEO_WINDOW_POS"] = f"{window_pos_x},{window_pos_y}"
 
-        self.screen = pygame.display.set_mode(
-            (SCREEN_WIDTH, SCREEN_HEIGHT)
-        )
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
         pygame.display.set_caption("Genetic Swarm Simulation")
         pygame.display.set_icon(pygame.image.load("icon.jpg"))
@@ -64,6 +68,15 @@ class Game:
             "AvgAvoidanceDistance": [],
         }
         self.data_point_counter = 0
+        # Initialize average stats attributes
+        self.avg_cohesion = 0.0
+        self.avg_alignment = 0.0
+        self.avg_separation = 0.0
+        self.avg_avoidance = 0.0
+        self.avg_food_attraction = 0.0
+        self.avg_obstacle_avoidance_distance = 0.0
+        self.close_menu_button_rect = None
+        self.apply_settings_button_rect = None
 
         self.plotter = GamePlotter()
 
@@ -78,6 +91,7 @@ class Game:
         self.button_text_color = WHITE
 
     def _load_initial_settings(self):
+        """Loads the default settings for the game."""
         return {
             "INITIAL_NUM_BIRDS": INITIAL_NUM_BIRDS,
             "FPS": FPS,
@@ -91,6 +105,7 @@ class Game:
         }
 
     def _setup_menu_ui_elements(self):
+        """Sets up the configuration for the settings menu UI."""
         self.menu_layout_config = {
             "INITIAL_NUM_BIRDS": {
                 "label": "Initial Birds",
@@ -154,6 +169,7 @@ class Game:
         self.close_menu_button_rect = None
 
     def _create_initial_birds(self, count):
+        """Creates the initial set of birds based on the given count."""
         self.birds_group.empty()
         for _ in range(int(count)):
             bird_x = random.randint(20, SCREEN_WIDTH - 20)
@@ -163,6 +179,7 @@ class Game:
         self.num_current_birds = len(self.birds_group)
 
     def _spawn_food(self):
+        """Spawns food items based on a timer and maximum food count."""
         self.food_spawn_timer += 1
         if self.food_spawn_timer >= self.settings["FOOD_SPAWN_INTERVAL_FRAMES"]:
             self.food_spawn_timer = 0
@@ -175,12 +192,16 @@ class Game:
                 )
 
     def _manage_obstacles(self):
+        """Manages the number of obstacles based on the bird count."""
         if self.num_current_birds > OBSTACLE_HIGH_BIRD_THRESHOLD:
             how_many_too_many = int(
                 round((self.num_current_birds - OBSTACLE_HIGH_BIRD_THRESHOLD) / 10, 0)
             )
             for _ in range(how_many_too_many):
-                if len(self.obstacle_group) < self.settings["DESIRED_NUM_OBSTACLES"]*2:
+                if (
+                    len(self.obstacle_group)
+                    < self.settings["DESIRED_NUM_OBSTACLES"] * 2
+                ):
                     new_obstacle = Obstacle(speed_x=self.settings["OBSTACLE_SPEED"])
                     self.obstacle_group.add(new_obstacle)
         else:
@@ -191,6 +212,7 @@ class Game:
     def _calculate_average_stat(
         self, sprites, attribute_name, num_sprites, default_value=0.0
     ):
+        """Calculates the average value of a specific attribute for a group of sprites."""
         if num_sprites == 0:
             return default_value
         return (
@@ -199,6 +221,7 @@ class Game:
         )
 
     def _calculate_and_update_stats(self):
+        """Calculates and updates various game statistics, including average bird attributes."""
         current_bird_sprites = self.birds_group.sprites()
         self.num_current_birds = len(current_bird_sprites)
 
@@ -249,6 +272,7 @@ class Game:
             self.data_point_counter += 1
 
     def _render_text(self, text_str, position, font_obj=None):
+        """Renders text onto the screen at a given position."""
         use_font = font_obj if font_obj else self.font
         text_surface = use_font.render(text_str, True, BLACK)
         self.screen.blit(text_surface, position)
@@ -263,6 +287,7 @@ class Game:
         mouse_pos,
         font=None,
     ):
+        """Draws a button on the screen with specified properties."""
         current_font = font if font else self.button_font
         button_color = hover_color if rect.collidepoint(mouse_pos) else base_color
 
@@ -273,6 +298,7 @@ class Game:
         self.screen.blit(text_surf, text_surf.get_rect(center=rect.center))
 
     def _draw_ui(self):
+        """Draws the main user interface elements like FPS and bird count."""
         current_fps_val = int(self.clock.get_fps())
         pad = UI_PADDING
         line_h = UI_LINE_HEIGHT
@@ -317,6 +343,7 @@ class Game:
         val_display_w,
         item_padding,
     ):
+        """Draws a single item (label, value, +/- buttons) in the settings menu."""
         label_surf = self.menu_item_font.render(f"{config['label']}:", True, WHITE)
         surface.blit(label_surf, (item_padding, current_y_pos))
 
@@ -350,6 +377,7 @@ class Game:
         }
 
     def _draw_menu_overlay(self):
+        """Draws the settings menu overlay if it's active."""
         if not self.menu_active:
             return
 
@@ -432,6 +460,7 @@ class Game:
         )
 
     def _handle_menu_input(self, event):
+        """Handles mouse input when the settings menu is active."""
         if (
             not self.menu_active
             or event.type != pygame.MOUSEBUTTONDOWN
@@ -472,11 +501,13 @@ class Game:
             self.menu_active = False
 
     def _apply_all_settings(self):
+        """Applies all current settings and respawns birds."""
         print("Applying settings...")
         self._create_initial_birds(self.settings["INITIAL_NUM_BIRDS"])
         print(f"Birds re-created with count: {self.settings['INITIAL_NUM_BIRDS']}")
 
     def _save_graph_data_to_csv(self):
+        """Saves the collected graph data to a CSV file."""
         if not self.graph_time_steps or not any(self.graph_data.values()):
             print("No graph data to save.")
             return
@@ -494,12 +525,12 @@ class Game:
         rows = []
         for i in range(num_time_steps):
             row = [self.graph_time_steps[i]]
-            for key in self.graph_data.keys():
-                row.append(self.graph_data[key][i] if i < len(self.graph_data[key]) else None)
+            for _key, data_list in self.graph_data.items():  # Use .items()
+                row.append(data_list[i] if i < len(data_list) else None)
             rows.append(row)
 
         try:
-            with open(filename, "w", newline="") as csvfile:
+            with open(filename, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(headers)
                 writer.writerows(rows)
@@ -508,6 +539,7 @@ class Game:
             print(f"Error saving graph data to CSV: {e}")
 
     def process_events(self):
+        """Processes all Pygame events, including input and quit events."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -532,6 +564,7 @@ class Game:
                         self.menu_active = False
 
     def update_state(self):
+        """Updates the state of all game objects and game logic."""
         self.birds_group.update(self.birds_group, self.obstacle_group, self.food_group)
         self.obstacle_group.update()
         self._spawn_food()
@@ -542,6 +575,7 @@ class Game:
             self._manage_obstacles()
 
     def render(self):
+        """Renders all game objects and UI elements to the screen."""
         self.screen.fill(SKY_BLUE)
         self.birds_group.draw(self.screen)
         self.obstacle_group.draw(self.screen)
@@ -555,6 +589,7 @@ class Game:
         pygame.display.flip()
 
     def run(self):
+        """The main game loop."""
         try:
             while self.running:
                 self.process_events()
@@ -567,16 +602,18 @@ class Game:
                         self.plotter.close_graph_window()
 
                 self.clock.tick(self.settings["FPS"])
-        except Exception as e:
-            print(f"An critical error occurred during the game loop: {e}")
-            import traceback
-
+        except pygame.error as e:
+            print(f"A Pygame error occurred during the game loop: {e}")
+            traceback.print_exc()
+            self.running = False
+        except Exception as e:  # pylint: disable=broad-except
+            print(f"An unexpected critical error occurred during the game loop: {e}")
             traceback.print_exc()
             self.running = False
         finally:
-            if self.plotter: # Check if plotter was initialized
-                self._save_graph_data_to_csv() # Save data before closing plotter
-                self.plotter.close_graph_window() # This will also stop the thread
+            if self.plotter:  # Check if plotter was initialized
+                self._save_graph_data_to_csv()  # Save data before closing plotter
+                self.plotter.close_graph_window()  # This will also stop the thread
                 print("Matplotlib graph resources cleaned up.")
             pygame.quit()
 
