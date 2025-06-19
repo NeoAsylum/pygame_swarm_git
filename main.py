@@ -66,7 +66,7 @@ class Game:
             "AvgAvoidance": [],
             "AvgFoodAttraction": [],
             "AvgAvoidanceDistance": [],
-        }
+        }  
         self.data_point_counter = 0
         # Initialize average stats attributes
         self.avg_cohesion = 0.0
@@ -200,7 +200,7 @@ class Game:
             for _ in range(how_many_too_many):
                 if (
                     len(self.obstacle_group)
-                    < self.settings["DESIRED_NUM_OBSTACLES"] * 4
+                    < self.settings["DESIRED_NUM_OBSTACLES"] * 3
                 ):
                     new_obstacle = Obstacle(speed_x=self.settings["OBSTACLE_SPEED"])
                     self.obstacle_group.add(new_obstacle)
