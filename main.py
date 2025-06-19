@@ -200,7 +200,7 @@ class Game:
             for _ in range(how_many_too_many):
                 if (
                     len(self.obstacle_group)
-                    < self.settings["DESIRED_NUM_OBSTACLES"] * 2
+                    < self.settings["DESIRED_NUM_OBSTACLES"] * 4
                 ):
                     new_obstacle = Obstacle(speed_x=self.settings["OBSTACLE_SPEED"])
                     self.obstacle_group.add(new_obstacle)

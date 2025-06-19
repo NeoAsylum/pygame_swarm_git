@@ -12,6 +12,7 @@ from env import (
     OBSTACLE_VERTICAL_EVASION_MAGNITUDE,
     GLOBAL_SPEED_FACTOR,
 )  # Import only necessary defaults
+DEFAULT_OBSTACLE_AVOIDANCE_RADIUS = 100.0
 
 
 class Bird(pygame.sprite.Sprite):
@@ -238,44 +239,162 @@ class Bird(pygame.sprite.Sprite):
 
     def avoid_obstacles(self, obstacles_group):
         """
-        Adjusts the bird's velocity to avoid obstacles.
-
-        The bird will attempt to move vertically to avoid obstacles that are
-        horizontally close and within a certain vertical range.
+        Calculates and applies forces to avoid obstacles using a predictive
+        Closest Point of Approach (CPA) method. This helps birds maintain a
+        minimum distance from obstacles.
 
         Args:
             obstacles_group (pygame.sprite.Group): A group of obstacle sprites.
         """
-        accumulated_vertical_force_component = 0
+        accumulated_avoidance_force_x = 0.0
+        accumulated_avoidance_force_y = 0.0
+
+        # --- Constants for tuning avoidance behavior ---
+        # Maximum number of frames to look into the future for CPA
+        MAX_PREDICTION_HORIZON_FRAMES = 60  # How far to look ahead
+        # Base magnitude for the repulsion force
+        BASE_REPULSION_FORCE_MAGNITUDE = 200.0 # Overall strength of avoidance
+        # Scalar for how much `self.obstacle_avoidance_distance` affects the safe distance buffer
+        AVOIDANCE_DISTANCE_BUFFER_SCALAR = 150.0 # Translates trait to pixel buffer
+        # Scalar for how much `self.obstacle_avoidance_distance` affects repulsion strength
+        AVOIDANCE_STRENGTH_SENSITIVITY_SCALAR = 2.0 # How trait influences force
+        # Epsilon for floating point comparisons to avoid division by zero
+        EPSILON = 0.001
+
+        # Get current global speed factor for accurate bird prediction
+        current_global_speed_factor = GLOBAL_SPEED_FACTOR  # Default from ENV
+        if self.settings and "GLOBAL_SPEED_FACTOR" in self.settings:
+            current_global_speed_factor = self.settings["GLOBAL_SPEED_FACTOR"]
+
+        # Bird's current velocity scaled by global speed factor
+        bird_vx_gsf = self.speed_x * current_global_speed_factor
+        bird_vy_gsf = self.speed_y * current_global_speed_factor
 
         for obstacle in obstacles_group:
-            obstacle_check_rect = obstacle.rect
+            obs_hitbox = obstacle.hitbox  # Use the precise hitbox for calculations
+            obs_speed_x = obstacle.speed_x  # Positive value, obstacle moves left
 
-            is_horizontally_close = (
-                obstacle_check_rect.right > self.rect.left
-                and obstacle_check_rect.left
-                < self.rect.right + OBSTACLE_REACTION_DISTANCE_HORIZONTAL
-            )
-            if is_horizontally_close:
-                y_range = 300 * self.obstacle_avoidance_distance
-                y_overlap = (
-                    self.rect.top - y_range < obstacle_check_rect.bottom
-                    and self.rect.bottom + y_range > obstacle_check_rect.top
-                )
+            # --- Broad phase filter: Is the obstacle roughly in a relevant zone? ---
+            # Horizontal check: Consider obstacles within a wider range horizontally
+            broad_horizontal_range = OBSTACLE_REACTION_DISTANCE_HORIZONTAL * 1.5
+            interest_min_x = self.rect.left - broad_horizontal_range
+            interest_max_x = self.rect.right + broad_horizontal_range
 
-                if y_overlap:
-                    if self.rect.centery < obstacle_check_rect.centery:
-                        accumulated_vertical_force_component -= (
-                            OBSTACLE_VERTICAL_EVASION_MAGNITUDE
-                        )
-                    elif self.rect.centery > obstacle_check_rect.centery:
-                        accumulated_vertical_force_component += (
-                            OBSTACLE_VERTICAL_EVASION_MAGNITUDE
-                        )
+            # Vertical check: Consider obstacles within a reasonable vertical band
+            vertical_interest_range = max(self.bird_height * 5, 100) + self.obstacle_avoidance_distance * 50
+            interest_min_y = self.rect.centery - vertical_interest_range
+            interest_max_y = self.rect.centery + vertical_interest_range
 
-        self.apply_new_velocity(
-            0, accumulated_vertical_force_component, self.avoidance_strength * 10
-        )
+            obs_collides_with_interest_zone_x = obs_hitbox.right > interest_min_x and \
+                                                obs_hitbox.left < interest_max_x
+            obs_collides_with_interest_zone_y = obs_hitbox.bottom > interest_min_y and \
+                                                obs_hitbox.top < interest_max_y
+            
+            bird_moving_right = bird_vx_gsf > EPSILON
+            # obs_moving_left = obs_speed_x > EPSILON # Obstacle speed_x is always positive (moves left)
+
+            is_relevant_horizontally = obs_collides_with_interest_zone_x or \
+                                       (bird_moving_right and obs_hitbox.left < self.rect.right) or \
+                                       (not bird_moving_right and obs_hitbox.right > self.rect.left)
+
+            if not (is_relevant_horizontally and obs_collides_with_interest_zone_y):
+                 continue # Skip obstacles outside the broad zone
+
+            # --- CPA Calculation ---
+            # Initial relative position vector (from obstacle center to bird center)
+            R0_x = self.x - obs_hitbox.centerx
+            R0_y = self.y - obs_hitbox.centery
+
+            # Relative velocity vector (bird velocity - obstacle velocity)
+            # Obstacle speed_x is positive, but it moves left (-x direction)
+            Vrel_x = bird_vx_gsf - (-obs_speed_x)
+            Vrel_y = bird_vy_gsf - 0 # Obstacle only moves horizontally
+
+            Vrel_sq = Vrel_x**2 + Vrel_y**2
+
+            t_cpa = float('inf')
+            dist_cpa = float('inf')
+            apply_force = False
+            pred_bird_cpa_x = self.x # Initialize with current positions
+            pred_bird_cpa_y = self.y
+            pred_obs_cpa_x = obs_hitbox.centerx
+            pred_obs_cpa_y = obs_hitbox.centery
+
+
+            # Define the safe distance (sum of half-dimensions + buffer based on trait)
+            bird_avg_dim = (self.bird_width + self.bird_height) * 0.25 # Using 0.25 for "half of average"
+            obs_avg_dim = (obstacle.head_width + obstacle.head_height) * 0.25
+
+            safe_distance = bird_avg_dim + obs_avg_dim + \
+                            self.obstacle_avoidance_distance * AVOIDANCE_DISTANCE_BUFFER_SCALAR
+
+            if Vrel_sq < EPSILON: # Relative velocity is near zero (moving parallel)
+                t_cpa = 0 # Closest point is now
+                dist_cpa = math.hypot(R0_x, R0_y)
+                if dist_cpa < safe_distance:
+                    apply_force = True
+                # pred_bird_cpa_x,y and pred_obs_cpa_x,y remain as current positions
+            else:
+                # Time to closest point of approach: t = - (R0 . Vrel) / |Vrel|^2
+                t_cpa = -(R0_x * Vrel_x + R0_y * Vrel_y) / Vrel_sq
+
+                if 0 <= t_cpa <= MAX_PREDICTION_HORIZON_FRAMES:
+                    # Predicted positions at t_cpa
+                    pred_bird_cpa_x = self.x + bird_vx_gsf * t_cpa
+                    pred_bird_cpa_y = self.y + bird_vy_gsf * t_cpa
+                    pred_obs_cpa_x = obs_hitbox.centerx - obs_speed_x * t_cpa
+                    pred_obs_cpa_y = obs_hitbox.centery # Obstacle only moves horizontally
+
+                    # Distance at t_cpa
+                    dist_cpa = math.hypot(pred_bird_cpa_x - pred_obs_cpa_x, pred_bird_cpa_y - pred_obs_cpa_y)
+
+                    if dist_cpa < safe_distance:
+                         apply_force = True
+
+            if apply_force:
+                # Evasion vector from predicted obstacle CPA to predicted bird CPA
+                evasion_dx = pred_bird_cpa_x - pred_obs_cpa_x
+                evasion_dy = pred_bird_cpa_y - pred_obs_cpa_y
+
+                dist_at_pred_cpa = math.hypot(evasion_dx, evasion_dy)
+
+                norm_evasion_dx = 0
+                norm_evasion_dy = 0
+                if dist_at_pred_cpa > EPSILON:
+                    norm_evasion_dx = evasion_dx / dist_at_pred_cpa
+                    norm_evasion_dy = evasion_dy / dist_at_pred_cpa
+                else: # Overlap or same position at CPA, use current relative y for default push
+                    if self.y < obs_hitbox.centery:
+                        norm_evasion_dy = -1  # Push upwards
+                    else:
+                        norm_evasion_dy = 1   # Push downwards
+                    # If still zero (e.g., y are equal), default to pushing downwards
+                    if abs(norm_evasion_dx) < EPSILON and abs(norm_evasion_dy) < EPSILON:
+                        norm_evasion_dy = 1
+
+
+                # Magnitude of repulsion:
+                # Stronger if CPA is sooner (time_factor closer to 1)
+                # Stronger if CPA distance is much less than safe_distance (distance_factor closer to 1)
+                effective_t_cpa = t_cpa if Vrel_sq >= EPSILON else 0.0 # Use 0 for parallel case urgency
+                time_factor = max(0.0, 1.0 - (effective_t_cpa / MAX_PREDICTION_HORIZON_FRAMES))
+                distance_factor = max(0.0, 1.0 - (dist_cpa / safe_distance))
+
+                # Sensitivity multiplier based on bird's trait
+                sensitivity_multiplier = (1.0 + self.obstacle_avoidance_distance * AVOIDANCE_STRENGTH_SENSITIVITY_SCALAR)
+
+                repulsion_magnitude = BASE_REPULSION_FORCE_MAGNITUDE * time_factor * distance_factor * sensitivity_multiplier
+
+                obstacle_force_x = norm_evasion_dx * repulsion_magnitude
+                obstacle_force_y = norm_evasion_dy * repulsion_magnitude
+
+                accumulated_avoidance_force_x += obstacle_force_x
+                accumulated_avoidance_force_y += obstacle_force_y
+
+        # After checking all obstacles, apply the accumulated avoidance force
+        if accumulated_avoidance_force_x != 0 or accumulated_avoidance_force_y != 0:
+            self.apply_new_velocity(accumulated_avoidance_force_x, accumulated_avoidance_force_y, self.avoidance_strength)
+
 
     def move_towards_food(self, food_group):
         """
